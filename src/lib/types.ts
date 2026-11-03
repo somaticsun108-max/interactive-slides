@@ -24,6 +24,8 @@ export interface ImageProps {
 
 export interface ClipartProps {
   emoji: string; // rendered at the size of the object
+  icon?: string; // lucide icon name (overrides emoji)
+  iconColor?: string;
 }
 
 export interface ShapeProps {

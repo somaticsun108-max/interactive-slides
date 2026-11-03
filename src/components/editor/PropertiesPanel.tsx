@@ -1,8 +1,11 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronsDown, ChevronsUp } from "lucide-react";
 import { useCurrentSlide, useDeck } from "@/store/deckStore";
 import type { SlideObject } from "@/lib/types";
+import EmojiPicker from "./EmojiPicker";
+import { ICON_MAP } from "@/components/shared/objects/iconMap";
 
 /** Right panel: selected object properties + slide background. */
 export default function PropertiesPanel() {
@@ -57,6 +60,9 @@ function ObjectProps({ obj }: { obj: SlideObject }) {
 
       {obj.type === "text" && obj.text && <TextSection id={obj.id} text={obj.text} />}
       {obj.type === "shape" && obj.shape && <ShapeSection id={obj.id} shape={obj.shape} />}
+      {obj.type === "image" && obj.image && <ImageSection id={obj.id} image={obj.image} />}
+      {obj.type === "clipart" && obj.clipart && <ClipartSection id={obj.id} clipart={obj.clipart} />}
+      {obj.type === "button" && obj.button && <ButtonSection id={obj.id} button={obj.button} />}
     </div>
   );
 }
@@ -109,6 +115,118 @@ function ShapeSection({ id, shape: sh }: { id: string; shape: NonNullable<SlideO
         {sh.shape === "rect" && (
           <NumberField label="Radius" value={sh.radius ?? 0} onChange={(radius) => updateShapeProps(id, { radius })} />
         )}
+      </div>
+    </Section>
+  );
+}
+
+function ImageSection({ id, image }: { id: string; image: NonNullable<SlideObject["image"]> }) {
+  const updateImageProps = useDeck((s) => s.updateImageProps);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1.5 * 1024 * 1024) {
+      alert("Please pick an image under 1.5 MB (it is stored in the deck JSON).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => updateImageProps(id, { src: String(reader.result) });
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  return (
+    <Section title="Image">
+      <label className="block">
+        <span className="block text-[10px] font-medium text-slate-400">Image URL</span>
+        <input
+          value={image.src.startsWith("data:") ? "(uploaded file)" : image.src}
+          disabled={image.src.startsWith("data:")}
+          placeholder="https://…"
+          onChange={(e) => updateImageProps(id, { src: e.target.value })}
+          className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-indigo-400 focus:outline-none disabled:bg-slate-50"
+        />
+      </label>
+      <div className="mt-2 flex gap-1">
+        <SmallBtn onClick={() => fileRef.current?.click()}>Upload file…</SmallBtn>
+        <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
+        {image.src && (
+          <SmallBtn onClick={() => updateImageProps(id, { src: "" })}>Clear</SmallBtn>
+        )}
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <div>
+          <span className="block text-[10px] font-medium text-slate-400">Fit</span>
+          <div className="flex gap-1">
+            {(["cover", "contain"] as const).map((f) => (
+              <SmallBtn key={f} onClick={() => updateImageProps(id, { fit: f })} active={image.fit === f}>
+                {f}
+              </SmallBtn>
+            ))}
+          </div>
+        </div>
+        <NumberField label="Radius" value={image.radius} onChange={(radius) => updateImageProps(id, { radius })} />
+      </div>
+    </Section>
+  );
+}
+
+function ClipartSection({ id, clipart }: { id: string; clipart: NonNullable<SlideObject["clipart"]> }) {
+  const updateClipartProps = useDeck((s) => s.updateClipartProps);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  return (
+    <Section title="Clipart">
+      <div className="flex items-center gap-2">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-2xl">
+          {clipart.icon ? <TickIcon name={clipart.icon} /> : clipart.emoji || "?"}
+        </div>
+        <SmallBtn onClick={() => setPickerOpen(true)}>Change…</SmallBtn>
+      </div>
+      {clipart.icon && (
+        <div className="mt-2">
+          <ColorField label="Icon color" value={clipart.iconColor ?? "#0f172a"} onChange={(iconColor) => updateClipartProps(id, { iconColor })} />
+        </div>
+      )}
+      {pickerOpen && (
+        <EmojiPicker
+          onPick={(r) => {
+            if (r.type === "emoji") updateClipartProps(id, { emoji: r.emoji, icon: undefined });
+            else updateClipartProps(id, { emoji: "", icon: r.icon });
+            setPickerOpen(false);
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </Section>
+  );
+}
+
+function TickIcon({ name }: { name: string }) {
+  const Icon = ICON_MAP[name];
+  return Icon ? <Icon size={22} /> : null;
+}
+
+function ButtonSection({ id, button }: { id: string; button: NonNullable<SlideObject["button"]> }) {
+  const updateButtonProps = useDeck((s) => s.updateButtonProps);
+  return (
+    <Section title="Button">
+      <label className="block">
+        <span className="block text-[10px] font-medium text-slate-400">Label</span>
+        <input
+          value={button.label}
+          onChange={(e) => updateButtonProps(id, { label: e.target.value })}
+          className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-indigo-400 focus:outline-none"
+        />
+      </label>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <ColorField label="Fill" value={button.fill} onChange={(fill) => updateButtonProps(id, { fill })} />
+        <ColorField label="Text" value={button.textColor} onChange={(textColor) => updateButtonProps(id, { textColor })} />
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <NumberField label="Font size" value={button.fontSize} onChange={(fontSize) => updateButtonProps(id, { fontSize })} />
+        <NumberField label="Radius" value={button.radius} onChange={(radius) => updateButtonProps(id, { radius })} />
       </div>
     </Section>
   );
