@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, CloudOff, Download, FileUp, FolderKanban, LogOut, Presentation, Redo2, Undo2 } from "lucide-react";
+import { ChevronDown, CloudOff, Download, FileUp, FolderKanban, LogOut, Presentation, Redo2, Share2, Undo2 } from "lucide-react";
 import { useDeck } from "@/store/deckStore";
 import { useSaveStore, type SaveStatus } from "@/store/saveStore";
 import { logoutAction } from "@/app/actions/auth";
+import ShareDialog from "./ShareDialog";
 import type { Deck } from "@/lib/types";
 
 /** Top bar: deck title, save status, undo/redo, export/import, present, user menu. */
@@ -20,6 +21,7 @@ export default function TopBar({ deckId, userEmail }: { deckId: string; userEmai
   const status = useSaveStore((s) => s.status);
   const fileRef = useRef<HTMLInputElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   function exportJson() {
     const blob = new Blob([JSON.stringify(deck, null, 2)], { type: "application/json" });
@@ -82,6 +84,9 @@ export default function TopBar({ deckId, userEmail }: { deckId: string; userEmai
           <FileUp size={18} />
         </IconBtn>
         <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={importJson} />
+        <IconBtn onClick={() => setShareOpen(true)} title="Share this deck">
+          <Share2 size={18} />
+        </IconBtn>
         <Link
           href={`/present?deck=${deckId}`}
           className="ml-2 flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
@@ -91,6 +96,7 @@ export default function TopBar({ deckId, userEmail }: { deckId: string; userEmai
         </Link>
         <UserMenu email={userEmail} open={menuOpen} setOpen={setMenuOpen} />
       </div>
+      {shareOpen && <ShareDialog deckId={deckId} onClose={() => setShareOpen(false)} />}
     </header>
   );
 }
