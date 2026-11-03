@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Canvas objects and handles must not trigger touch scrolling while dragging. */
+.no-touch {
+  touch-action: none;
+}
+
+/* Hide scrollbars in the slide list but keep scrolling */
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
