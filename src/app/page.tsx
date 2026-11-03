@@ -1,5 +1,8 @@
-import EditorShell from "@/components/editor/EditorShell";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 
-export default function EditorPage() {
-  return <EditorShell />;
+/** The editor moved to /deck/[id]; / sends visitors where they belong. */
+export default async function RootPage() {
+  const session = await auth();
+  redirect(session?.user ? "/dashboard" : "/login");
 }
