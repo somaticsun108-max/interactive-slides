@@ -8,6 +8,11 @@ import EmojiPicker from "./EmojiPicker";
 import ActionEditor from "./ActionEditor";
 import { ICON_MAP } from "@/components/shared/objects/iconMap";
 
+/** Uploaded/inline sources (blob URLs, data URLs) are not user-editable text. */
+function isStoredSrc(src: string): boolean {
+  return src.startsWith("data:") || src.startsWith("blob:") || /https:\/\/[^\s]+\.public\.blob\.vercel-storage\.com\//.test(src);
+}
+
 /** Right panel: selected object properties + slide background. */
 export default function PropertiesPanel() {
   const slide = useCurrentSlide();
@@ -126,18 +131,30 @@ function ShapeSection({ id, shape: sh }: { id: string; shape: NonNullable<SlideO
 function ImageSection({ id, image }: { id: string; image: NonNullable<SlideObject["image"]> }) {
   const updateImageProps = useDeck((s) => s.updateImageProps);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 1.5 * 1024 * 1024) {
-      alert("Please pick an image under 1.5 MB (it is stored in the deck JSON).");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => updateImageProps(id, { src: String(reader.result) });
-    reader.readAsDataURL(file);
     e.target.value = "";
+    if (!file) return;
+    setUploadError("");
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body });
+      const json = (await res.json().catch(() => null)) as { url?: string; error?: string } | null;
+      if (!res.ok || !json?.url) {
+        setUploadError(json?.error ?? `Upload failed (${res.status}).`);
+        return;
+      }
+      updateImageProps(id, { src: json.url });
+    } catch {
+      setUploadError("Upload failed - check your connection and try again.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -145,13 +162,31 @@ function ImageSection({ id, image }: { id: string; image: NonNullable<SlideObjec
       <label className="block">
         <span className="block text-[10px] font-medium text-slate-400">Image URL</span>
         <input
-          value={image.src.startsWith("data:") ? "(uploaded file)" : image.src}
-          disabled={image.src.startsWith("data:")}
+          value={isStoredSrc(image.src) ? "(uploaded file)" : image.src}
+          disabled={isStoredSrc(image.src)}
           placeholder="https://…"
           onChange={(e) => updateImageProps(id, { src: e.target.value })}
           className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-indigo-400 focus:outline-none disabled:bg-slate-50"
         />
       </label>
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="hidden"
+          onChange={onFile}
+        />
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => fileRef.current?.click()}
+          className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+        >
+          {uploading ? "Uploading…" : "Upload image (max 5 MB)"}
+        </button>
+        {uploadError && <span className="text-xs text-rose-600">{uploadError}</span>}
+      </div>
       <div className="mt-2 flex gap-1">
         <SmallBtn onClick={() => fileRef.current?.click()}>Upload file…</SmallBtn>
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
