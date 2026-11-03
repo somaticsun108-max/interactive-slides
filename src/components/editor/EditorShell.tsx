@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useDeck } from "@/store/deckStore";
+import { useRunner } from "@/store/runnerStore";
 import TopBar from "./TopBar";
 import SlideList from "./SlideList";
 import Canvas from "./Canvas";
@@ -10,10 +11,17 @@ import PropertiesPanel from "./PropertiesPanel";
 
 /** Full editor layout + global keyboard shortcuts. */
 export default function EditorShell() {
+  const currentSlideId = useDeck((s) => s.currentSlideId);
+
   useEffect(() => {
     // Restore the persisted deck after mount (avoids SSR hydration mismatch).
     useDeck.persist.rehydrate();
   }, []);
+
+  useEffect(() => {
+    // Moving between slides closes popups and expanded cards.
+    useRunner.getState().reset();
+  }, [currentSlideId]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -47,7 +55,10 @@ export default function EditorShell() {
         return;
       }
       if (e.key === "Escape") {
-        select(null);
+        const runner = useRunner.getState();
+        if (runner.popups.length > 0) runner.closeTopPopup();
+        else if (runner.expandedId) runner.collapse();
+        else select(null);
         return;
       }
       if (selectedId && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {

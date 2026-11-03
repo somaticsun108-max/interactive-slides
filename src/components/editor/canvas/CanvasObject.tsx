@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import type { SlideObject } from "@/lib/types";
 import { useDeck } from "@/store/deckStore";
+import { useRunner } from "@/store/runnerStore";
 import ObjectView from "@/components/shared/objects/ObjectView";
 
 /** One object on the canvas: draggable via dnd-kit, selectable, text-editable. */
@@ -21,6 +22,8 @@ export default function CanvasObject({
   const select = useDeck((s) => s.select);
   const setEditing = useDeck((s) => s.setEditing);
   const updateObject = useDeck((s) => s.updateObject);
+  const expanded = useRunner((s) => s.expandedId === obj.id);
+  const hasExpand = obj.action.type === "expand";
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: obj.id,
     disabled: editing,
@@ -45,9 +48,17 @@ export default function CanvasObject({
         width: obj.w,
         height: obj.h,
         zIndex: obj.z,
-        transform: transform ? `translate3d(${dx}px, ${dy}px, 0)` : undefined,
+        transform: transform
+          ? `translate3d(${dx}px, ${dy}px, 0)`
+          : expanded
+            ? "scale(1.12)"
+            : undefined,
+        transition: transform ? undefined : "transform 0.2s ease",
+        transformOrigin: "center",
         opacity: isDragging ? 0.85 : 1,
         outline: selected ? "2px solid #4f46e5" : undefined,
+        outlineOffset: hasExpand ? 0 : undefined,
+        cursor: hasExpand && !editing ? "pointer" : undefined,
       }}
     >
       {editing && obj.type === "text" ? <TextEditor obj={obj} /> : <ObjectView obj={obj} />}

@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, ChevronsDown, ChevronsUp } from "lucide-react";
 import { useCurrentSlide, useDeck } from "@/store/deckStore";
 import type { SlideObject } from "@/lib/types";
 import EmojiPicker from "./EmojiPicker";
+import ActionEditor from "./ActionEditor";
 import { ICON_MAP } from "@/components/shared/objects/iconMap";
 
 /** Right panel: selected object properties + slide background. */
@@ -63,6 +64,8 @@ function ObjectProps({ obj }: { obj: SlideObject }) {
       {obj.type === "image" && obj.image && <ImageSection id={obj.id} image={obj.image} />}
       {obj.type === "clipart" && obj.clipart && <ClipartSection id={obj.id} clipart={obj.clipart} />}
       {obj.type === "button" && obj.button && <ButtonSection id={obj.id} button={obj.button} />}
+
+      <ActionEditor obj={obj} />
     </div>
   );
 }

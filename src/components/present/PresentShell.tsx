@@ -3,12 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CANVAS_H, CANVAS_W } from "@/lib/types";
+import type { Slide, SlideObject } from "@/lib/types";
 import { useDeck } from "@/store/deckStore";
-import SlideStatic from "@/components/shared/SlideStatic";
+import { useRunner } from "@/store/runnerStore";
+import { backgroundStyle } from "@/components/shared/background";
+import ObjectView from "@/components/shared/objects/ObjectView";
+import ActionHost from "@/components/shared/ActionHost";
 
 /**
- * Present mode (phase 1 version): fullscreen slide render with
- * keyboard / click navigation. Interactive actions arrive in phase 3.
+ * Present mode: fullscreen, scales to any screen. Objects with actions are
+ * clickable (popups, expand-in-place, go-to-slide, URLs).
  */
 export default function PresentShell() {
   const router = useRouter();
@@ -36,13 +40,33 @@ export default function PresentShell() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  useEffect(() => {
+    // Slide changes close popups / expanded cards.
+    useRunner.getState().reset();
+  }, [idx]);
+
+  const slide: Slide | undefined = deck.slides[idx];
+
   const next = useCallback(() => setIdx((i) => Math.min(i + 1, deck.slides.length - 1)), [deck.slides.length]);
   const prev = useCallback(() => setIdx((i) => Math.max(i - 1, 0)), []);
+  const gotoIndex = useCallback(
+    (slideId: string) => {
+      const i = deck.slides.findIndex((s) => s.id === slideId);
+      if (i !== -1) setIdx(i);
+    },
+    [deck.slides]
+  );
+
+  const run = useRunner((s) => s.run);
+  const expandedId = useRunner((s) => s.expandedId);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        router.push("/");
+        const runner = useRunner.getState();
+        if (runner.popups.length > 0) runner.closeTopPopup();
+        else if (runner.expandedId) runner.collapse();
+        else router.push("/");
         return;
       }
       if (["ArrowRight", "ArrowDown", " ", "PageDown", "Enter"].includes(e.key)) {
@@ -57,8 +81,9 @@ export default function PresentShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, [next, prev, router]);
 
-  const slide = deck.slides[Math.min(idx, deck.slides.length - 1)];
   if (!slide) return null;
+
+  const sorted = [...slide.objects].sort((a, b) => a.z - b.z);
 
   return (
     <div
@@ -68,22 +93,57 @@ export default function PresentShell() {
         if (e.target === e.currentTarget) next();
       }}
     >
-      <div className="relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <SlideStatic slide={slide} width={CANVAS_W * scale} />
+      <div
+        className="relative overflow-hidden"
+        style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="absolute left-0 top-0" style={{ width: CANVAS_W * scale, height: CANVAS_H * scale, ...backgroundStyle(slide) }}>
+          <div
+            className="absolute left-0 top-0 origin-top-left"
+            style={{ width: CANVAS_W, height: CANVAS_H, transform: `scale(${scale})` }}
+          >
+            {sorted.map((obj) => (
+              <PresentObject
+                key={obj.id}
+                obj={obj}
+                expanded={obj.id === expandedId}
+                onClick={() => run(obj, { gotoSlide: gotoIndex })}
+              />
+            ))}
+          </div>
+        </div>
+        <ActionHost slide={slide} scale={scale} bounds={{ w: CANVAS_W * scale, h: CANVAS_H * scale }} />
       </div>
+
       <div className="absolute bottom-3 right-4 text-xs text-white/60">
         {idx + 1} / {deck.slides.length} · Esc to exit
       </div>
-      <button
-        onClick={prev}
-        aria-label="Previous slide"
-        className="absolute left-0 top-0 h-full w-16 cursor-pointer opacity-0"
-      />
-      <button
-        onClick={next}
-        aria-label="Next slide"
-        className="absolute right-0 top-0 h-full w-16 cursor-pointer opacity-0"
-      />
+      <button onClick={prev} aria-label="Previous slide" className="absolute left-0 top-0 h-full w-16 cursor-pointer opacity-0" />
+      <button onClick={next} aria-label="Next slide" className="absolute right-0 top-0 h-full w-16 cursor-pointer opacity-0" />
+    </div>
+  );
+}
+
+function PresentObject({ obj, expanded, onClick }: { obj: SlideObject; expanded: boolean; onClick: () => void }) {
+  const interactive = obj.action.type !== "none";
+  return (
+    <div
+      onClick={interactive ? onClick : undefined}
+      className={`absolute no-touch ${interactive ? "cursor-pointer" : ""}`}
+      style={{
+        left: obj.x,
+        top: obj.y,
+        width: obj.w,
+        height: obj.h,
+        zIndex: obj.z,
+        transform: expanded ? "scale(1.12)" : undefined,
+        transition: "transform 0.2s ease",
+        transformOrigin: "center",
+        outline: expanded ? "3px solid #4f46e5" : undefined,
+      }}
+    >
+      <ObjectView obj={obj} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { CANVAS_H, CANVAS_W } from "@/lib/types";
 import { useCurrentSlide, useDeck } from "@/store/deckStore";
 import CanvasObject from "./canvas/CanvasObject";
 import ResizeFrame from "./canvas/ResizeFrame";
+import ActionHost from "@/components/shared/ActionHost";
 
 /** The 16:9 editing canvas: background, draggable objects, resize frame. */
 export default function Canvas() {
@@ -86,6 +87,7 @@ export default function Canvas() {
             ))}
             {selected && <ResizeFrame obj={selected} scaleRef={scaleRef} />}
           </div>
+          <ActionHost slide={slide} scale={scale} bounds={{ w: CANVAS_W * scale, h: CANVAS_H * scale }} />
         </div>
       </DndContext>
     </div>
