@@ -32,9 +32,11 @@ async function main() {
     console.warn("[migrate] DATABASE_URL is not set - skipping migration (tables must exist before any DB query).");
     return;
   }
-  const sql = neon(url) as unknown as (q: string) => Promise<unknown[]>;
+  // @neondatabase/serverless v1.x: plain calls are gone; raw statements
+  // must go through sql.query("..."), while sql`...` is the template API.
+  const sql = neon(url);
   for (const stmt of STATEMENTS) {
-    await sql(stmt);
+    await sql.query(stmt);
   }
   console.log(`[migrate] ok: ${STATEMENTS.length} statements applied (idempotent).`);
 }
