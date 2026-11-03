@@ -12,6 +12,7 @@ import type {
   Slide,
   SlideBackground,
   SlideObject,
+  SlideTransition,
   TextProps,
   ButtonProps,
   ClipartProps,
@@ -65,6 +66,7 @@ interface DeckStore {
   reorderSlide: (from: number, to: number) => void;
   setCurrentSlide: (id: string) => void;
   setSlideName: (id: string, name: string) => void;
+  setSlideTransition: (id: string, transition: SlideTransition) => void;
   updateBackground: (patch: Partial<SlideBackground>) => void;
 
   // objects
@@ -200,6 +202,12 @@ export const useDeck = create<DeckStore>()(
           apply((deck) => ({
             ...deck,
             slides: deck.slides.map((s) => (s.id === id ? { ...s, name } : s)),
+          })),
+
+        setSlideTransition: (id, transition) =>
+          apply((deck) => ({
+            ...deck,
+            slides: deck.slides.map((s) => (s.id === id ? { ...s, transition } : s)),
           })),
 
         updateBackground: (patch) =>

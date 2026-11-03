@@ -87,11 +87,15 @@ export interface SlideBackground {
   overlay: number; // 0..1 dark overlay for image backgrounds
 }
 
+export type SlideTransition = "none" | "fade" | "slide" | "zoom";
+
 export interface Slide {
   id: string;
   name: string;
   background: SlideBackground;
   objects: SlideObject[];
+  /** How this slide animates in when shown during a presentation. */
+  transition?: SlideTransition;
 }
 
 export interface Deck {

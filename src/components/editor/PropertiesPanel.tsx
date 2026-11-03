@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronsDown, ChevronsUp } from "lucide-react";
 import { useCurrentSlide, useDeck } from "@/store/deckStore";
-import type { SlideObject } from "@/lib/types";
+import type { Slide, SlideObject } from "@/lib/types";
 import EmojiPicker from "./EmojiPicker";
 import ActionEditor from "./ActionEditor";
 import { ICON_MAP } from "@/components/shared/objects/iconMap";
@@ -235,9 +235,17 @@ function ButtonSection({ id, button }: { id: string; button: NonNullable<SlideOb
   );
 }
 
+const TRANSITIONS: { value: NonNullable<Slide["transition"]>; label: string }[] = [
+  { value: "fade", label: "Fade" },
+  { value: "slide", label: "Slide in" },
+  { value: "zoom", label: "Zoom" },
+  { value: "none", label: "None" },
+];
+
 function BackgroundSection() {
   const slide = useCurrentSlide();
   const updateBackground = useDeck((s) => s.updateBackground);
+  const setSlideTransition = useDeck((s) => s.setSlideTransition);
   const bg = slide.background;
   return (
     <div className="mt-6 border-t border-slate-200 pt-4">
@@ -264,6 +272,17 @@ function BackgroundSection() {
           </div>
         )}
       </Section>
+      <div className="mt-4">
+        <Section title="Transition (present mode)">
+          <div className="flex flex-wrap gap-1">
+            {TRANSITIONS.map((t) => (
+              <SmallBtn key={t.value} onClick={() => setSlideTransition(slide.id, t.value)} active={(slide.transition ?? "fade") === t.value}>
+                {t.label}
+              </SmallBtn>
+            ))}
+          </div>
+        </Section>
+      </div>
     </div>
   );
 }

@@ -15,3 +15,42 @@
   background: #cbd5e1;
   border-radius: 8px;
 }
+
+/* Present-mode slide transitions */
+@keyframes slide-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slide-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes slide-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.anim-fade {
+  animation: slide-fade-in 0.35s ease both;
+}
+.anim-slide {
+  animation: slide-slide-in 0.35s ease both;
+}
+.anim-zoom {
+  animation: slide-zoom-in 0.35s ease both;
+}

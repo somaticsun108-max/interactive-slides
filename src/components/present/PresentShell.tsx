@@ -84,6 +84,7 @@ export default function PresentShell() {
   if (!slide) return null;
 
   const sorted = [...slide.objects].sort((a, b) => a.z - b.z);
+  const animClass = `anim-${slide.transition ?? "fade"}`;
 
   return (
     <div
@@ -94,7 +95,8 @@ export default function PresentShell() {
       }}
     >
       <div
-        className="relative overflow-hidden"
+        key={slide.id}
+        className={`relative overflow-hidden ${animClass}`}
         style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -116,8 +118,26 @@ export default function PresentShell() {
         <ActionHost slide={slide} scale={scale} bounds={{ w: CANVAS_W * scale, h: CANVAS_H * scale }} />
       </div>
 
-      <div className="absolute bottom-3 right-4 text-xs text-white/60">
-        {idx + 1} / {deck.slides.length} · Esc to exit
+      {/* progress bar with clickable segments */}
+      <div className="absolute bottom-0 left-0 flex w-full gap-1 px-3 py-2">
+        {deck.slides.map((s, i) => (
+          <button
+            key={s.id}
+            aria-label={`Go to slide ${i + 1}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIdx(i);
+            }}
+            className={`h-1.5 flex-1 rounded-full transition-colors ${i === idx ? "bg-white/90" : "bg-white/25 hover:bg-white/50"}`}
+          />
+        ))}
+      </div>
+
+      <div className="absolute bottom-5 left-4 text-xs text-white/70">
+        <span className="font-semibold">{slide.name}</span>
+        <span className="ml-2 text-white/40">
+          {idx + 1} / {deck.slides.length} · ← → navigate · Esc exit
+        </span>
       </div>
       <button onClick={prev} aria-label="Previous slide" className="absolute left-0 top-0 h-full w-16 cursor-pointer opacity-0" />
       <button onClick={next} aria-label="Next slide" className="absolute right-0 top-0 h-full w-16 cursor-pointer opacity-0" />
