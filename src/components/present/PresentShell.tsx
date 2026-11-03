@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { CANVAS_H, CANVAS_W } from "@/lib/types";
-import type { Slide, SlideObject } from "@/lib/types";
+import type { Deck, Slide, SlideObject } from "@/lib/types";
 import { useDeck } from "@/store/deckStore";
 import { useRunner } from "@/store/runnerStore";
 import { backgroundStyle } from "@/components/shared/background";
@@ -13,21 +14,30 @@ import ActionHost from "@/components/shared/ActionHost";
 /**
  * Present mode: fullscreen, scales to any screen. Objects with actions are
  * clickable (popups, expand-in-place, go-to-slide, URLs).
+ *
+ * `deck` comes from the server for /present?deck=<id> and public /d/<slug>
+ * pages; when omitted (share-less legacy use) it falls back to the editor
+ * store. `embed` hides the on-screen chrome for iframe embedding.
  */
-export default function PresentShell() {
+export default function PresentShell({
+  deck: deckProp,
+  embed = false,
+  backHref = null,
+}: {
+  deck?: Deck;
+  embed?: boolean;
+  backHref?: string | null;
+}) {
   const router = useRouter();
-  const deck = useDeck((s) => s.deck);
+  const storeDeck = useDeck((s) => s.deck);
   const currentSlideId = useDeck((s) => s.currentSlideId);
+  const deck = deckProp ?? storeDeck;
   const [idx, setIdx] = useState(() => {
     const i = deck.slides.findIndex((s) => s.id === currentSlideId);
     return i === -1 ? 0 : i;
   });
   const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    useDeck.persist.rehydrate();
-  }, []);
 
   useEffect(() => {
     const update = () => {
@@ -118,27 +128,39 @@ export default function PresentShell() {
         <ActionHost slide={slide} scale={scale} bounds={{ w: CANVAS_W * scale, h: CANVAS_H * scale }} />
       </div>
 
-      {/* progress bar with clickable segments */}
-      <div className="absolute bottom-0 left-0 flex w-full gap-1 px-3 py-2">
-        {deck.slides.map((s, i) => (
-          <button
-            key={s.id}
-            aria-label={`Go to slide ${i + 1}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              setIdx(i);
-            }}
-            className={`h-1.5 flex-1 rounded-full transition-colors ${i === idx ? "bg-white/90" : "bg-white/25 hover:bg-white/50"}`}
-          />
-        ))}
-      </div>
+      {!embed && (
+        <>
+          {/* progress bar with clickable segments */}
+          <div className="absolute bottom-0 left-0 flex w-full gap-1 px-3 py-2">
+            {deck.slides.map((s, i) => (
+              <button
+                key={s.id}
+                aria-label={`Go to slide ${i + 1}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIdx(i);
+                }}
+                className={`h-1.5 flex-1 rounded-full transition-colors ${i === idx ? "bg-white/90" : "bg-white/25 hover:bg-white/50"}`}
+              />
+            ))}
+          </div>
 
-      <div className="absolute bottom-5 left-4 text-xs text-white/70">
-        <span className="font-semibold">{slide.name}</span>
-        <span className="ml-2 text-white/40">
-          {idx + 1} / {deck.slides.length} · ← → navigate · Esc exit
-        </span>
-      </div>
+          <div className="absolute bottom-5 left-4 text-xs text-white/70">
+            <span className="font-semibold">{slide.name}</span>
+            <span className="ml-2 text-white/40">
+              {idx + 1} / {deck.slides.length} · ← → navigate · Esc exit
+            </span>
+          </div>
+        </>
+      )}
+      {backHref && !embed && (
+        <Link
+          href={backHref}
+          className="absolute right-4 top-4 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 backdrop-blur hover:bg-white/20"
+        >
+          Back to editor
+        </Link>
+      )}
       <button onClick={prev} aria-label="Previous slide" className="absolute left-0 top-0 h-full w-16 cursor-pointer opacity-0" />
       <button onClick={next} aria-label="Next slide" className="absolute right-0 top-0 h-full w-16 cursor-pointer opacity-0" />
     </div>

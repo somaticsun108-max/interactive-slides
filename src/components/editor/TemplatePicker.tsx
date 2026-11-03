@@ -4,13 +4,22 @@ import { X } from "lucide-react";
 import { TEMPLATES } from "@/lib/templates";
 import { useDeck } from "@/store/deckStore";
 
-/** "Add slide from template" modal. */
-export default function TemplatePicker({ onClose }: { onClose: () => void }) {
+/** "Add slide from template" modal. Pass onPick to use it as a generic template chooser. */
+export default function TemplatePicker({
+  onClose,
+  onPick,
+}: {
+  onClose: () => void;
+  onPick?: (templateId: string) => void;
+}) {
   const addSlide = useDeck((s) => s.addSlide);
 
   function pick(templateId: string) {
-    const t = TEMPLATES.find((x) => x.id === templateId);
-    if (t) addSlide(t.make());
+    if (onPick) onPick(templateId);
+    else {
+      const t = TEMPLATES.find((x) => x.id === templateId);
+      if (t) addSlide(t.make());
+    }
     onClose();
   }
 
@@ -22,7 +31,7 @@ export default function TemplatePicker({ onClose }: { onClose: () => void }) {
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold">Add a slide</h2>
+            <h2 className="text-lg font-bold">{onPick ? "Choose a template" : "Add a slide"}</h2>
             <p className="text-sm text-slate-500">Pick a ready-made template — everything stays editable afterwards.</p>
           </div>
           <button onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" title="Close">

@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 import { CANVAS_H, CANVAS_W } from "@/lib/types";
 import type {
   Action,
@@ -98,9 +97,7 @@ interface DeckStore {
 
 const sample = makeSampleDeck();
 
-export const useDeck = create<DeckStore>()(
-  persist(
-    (set, get) => {
+export const useDeck = create<DeckStore>()((set, get) => {
       /** Apply a deck transform, optionally recording undo history. */
       function apply(fn: (deck: Deck) => Deck, history = true) {
         const { deck, past, future } = get();
@@ -403,27 +400,7 @@ export const useDeck = create<DeckStore>()(
           });
         },
       };
-    },
-    {
-      name: "interactive-slides-deck",
-      version: 1,
-      storage: createJSONStorage(() => localStorage),
-      skipHydration: true,
-      partialize: (s) => ({ deck: s.deck, currentSlideId: s.currentSlideId }),
-      merge: (persisted, current) => {
-        const p = persisted as Partial<{ deck: Deck; currentSlideId: string }> | undefined;
-        if (p?.deck?.slides?.length) {
-          return {
-            ...current,
-            deck: p.deck,
-            currentSlideId:
-              p.deck.slides.find((s) => s.id === p.currentSlideId)?.id ?? p.deck.slides[0].id,
-          };
-        }
-        return current;
-      },
     }
-  )
 );
 
 /** Convenience selectors */

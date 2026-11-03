@@ -8,15 +8,21 @@ import SlideList from "./SlideList";
 import Canvas from "./Canvas";
 import Toolbar from "./Toolbar";
 import PropertiesPanel from "./PropertiesPanel";
+import { useCloudSync } from "./useCloudSync";
 
 /** Full editor layout + global keyboard shortcuts. */
-export default function EditorShell() {
+export default function EditorShell({
+  deckId,
+  userEmail,
+  initialError = null,
+}: {
+  deckId: string;
+  userEmail: string;
+  initialError?: string | null;
+}) {
   const currentSlideId = useDeck((s) => s.currentSlideId);
 
-  useEffect(() => {
-    // Restore the persisted deck after mount (avoids SSR hydration mismatch).
-    useDeck.persist.rehydrate();
-  }, []);
+  useCloudSync(deckId, initialError);
 
   useEffect(() => {
     // Moving between slides closes popups and expanded cards.
@@ -86,7 +92,7 @@ export default function EditorShell() {
 
   return (
     <div className="flex h-screen flex-col">
-      <TopBar />
+      <TopBar deckId={deckId} userEmail={userEmail} />
       <div className="flex min-h-0 flex-1">
         <SlideList />
         <main className="flex min-w-0 flex-1 flex-col bg-slate-100">
