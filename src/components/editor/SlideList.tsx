@@ -3,7 +3,9 @@
 import { useSensor, useSensors, DndContext, PointerSensor, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useState } from "react";
 import { Copy, Plus, Trash2 } from "lucide-react";
+import TemplatePicker from "./TemplatePicker";
 import { cn } from "@/lib/cn";
 import { useDeck } from "@/store/deckStore";
 import SlideStatic from "@/components/shared/SlideStatic";
@@ -20,6 +22,7 @@ export default function SlideList() {
   const deleteSlide = useDeck((s) => s.deleteSlide);
   const reorderSlide = useDeck((s) => s.reorderSlide);
   const setCurrentSlide = useDeck((s) => s.setCurrentSlide);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -37,8 +40,8 @@ export default function SlideList() {
       <div className="flex items-center justify-between px-3 py-2">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Slides</h2>
         <button
-          onClick={() => addSlide()}
-          title="Add blank slide"
+          onClick={() => setPickerOpen(true)}
+          title="Add slide from template"
           className="rounded p-1 text-slate-600 hover:bg-slate-100"
         >
           <Plus size={18} />
@@ -61,6 +64,7 @@ export default function SlideList() {
           </SortableContext>
         </DndContext>
       </div>
+      {pickerOpen && <TemplatePicker onClose={() => setPickerOpen(false)} />}
     </aside>
   );
 }
