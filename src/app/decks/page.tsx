@@ -22,5 +22,5 @@ export default async function DecksPage() {
     error = "The database is not configured, so decks cannot be listed yet. Set DATABASE_URL and run npm run db:migrate.";
   }
 
-  return <DecksView decks={decks} error={error} />;
+  return <DecksView decks={decks} userEmail={user.email ?? ""} error={error} />;
 }

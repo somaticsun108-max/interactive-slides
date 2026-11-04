@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { decks } from "@/lib/db/schema";
 import { requireUser } from "@/lib/session";
+import { listDecks, type DeckSummary } from "@/lib/deck/store";
 import DashboardGrid from "./DashboardGrid";
 
 export default async function DashboardPage() {
@@ -28,5 +29,20 @@ export default async function DashboardPage() {
     firstSlide: r.data.slides[0] ?? null,
   }));
 
-  return <DashboardGrid decks={deckList} email={user.email} />;
+  // Script-generated decks are listed alongside interactive ones, so the
+  // feature is discoverable from the page people actually land on.
+  let scriptDecks: DeckSummary[] = [];
+  try {
+    scriptDecks = await listDecks(user.id);
+  } catch {
+    scriptDecks = []; // DB not configured for this feature yet; never block the page
+  }
+
+  return (
+    <DashboardGrid
+      decks={deckList}
+      scriptDecks={scriptDecks}
+      email={user.email ?? ""}
+    />
+  );
 }

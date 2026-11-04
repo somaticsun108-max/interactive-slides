@@ -2,22 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import {
-  ChevronDown,
-  CloudOff,
-  Download,
-  FileUp,
-  FolderKanban,
-  LayoutGrid,
-  LogOut,
-  Presentation,
-  Redo2,
-  Share2,
-  Undo2,
-} from "lucide-react";
+import { CloudOff, Download, FileUp, Presentation, Redo2, Share2, Undo2 } from "lucide-react";
+import { AccountMenu, BackToDecks } from "@/components/shared/AppHeader";
 import { useDeck } from "@/store/deckStore";
 import { useSaveStore, type SaveStatus } from "@/store/saveStore";
-import { logoutAction } from "@/app/actions/auth";
 import ShareDialog from "./ShareDialog";
 import type { Deck } from "@/lib/types";
 
@@ -32,7 +20,6 @@ export default function TopBar({ deckId, userEmail }: { deckId: string; userEmai
   const canRedo = useDeck((s) => s.future.length > 0);
   const status = useSaveStore((s) => s.status);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
   function exportJson() {
@@ -70,15 +57,9 @@ export default function TopBar({ deckId, userEmail }: { deckId: string; userEmai
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white pl-3 pr-4">
-      <div className="flex min-w-0 items-center gap-2.5">
-        <Link
-          href="/dashboard"
-          title="All decks"
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/40 transition hover:brightness-105 active:scale-[0.97]"
-        >
-          <LayoutGrid size={17} strokeWidth={2.25} />
-        </Link>
-        <span className="hidden h-5 w-px bg-slate-200 sm:block" />
+      <div className="flex min-w-0 items-center gap-2">
+        <BackToDecks />
+        <span className="h-5 w-px bg-slate-200" />
         <input
           value={deck.title}
           onChange={(e) => setTitle(e.target.value)}
@@ -132,7 +113,7 @@ export default function TopBar({ deckId, userEmail }: { deckId: string; userEmai
           <span className="hidden sm:inline">Present</span>
         </Link>
 
-        <UserMenu email={userEmail} open={menuOpen} setOpen={setMenuOpen} />
+        <AccountMenu email={userEmail} />
       </div>
 
       {shareOpen && <ShareDialog deckId={deckId} onClose={() => setShareOpen(false)} />}
@@ -172,51 +153,5 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
       Saved
     </span>
-  );
-}
-
-function UserMenu({ email, open, setOpen }: { email: string; open: boolean; setOpen: (v: boolean) => void }) {
-  useEffect(() => {
-    if (!open) return;
-    const close = () => setOpen(false);
-    window.addEventListener("click", close);
-    return () => window.removeEventListener("click", close);
-  }, [open, setOpen]);
-
-  return (
-    <div className="relative ml-1">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(!open);
-        }}
-        className="flex items-center gap-1 rounded-full p-0.5 pr-1.5 transition hover:bg-slate-100"
-        title="Account menu"
-      >
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-slate-700 to-slate-900 text-[11px] font-semibold text-white">
-          {email.slice(0, 1).toUpperCase()}
-        </span>
-        <ChevronDown size={13} className="text-slate-400" />
-      </button>
-      {open && (
-        <div
-          className="animate-pop absolute right-0 top-11 z-50 w-60 rounded-xl border border-slate-200 bg-white p-1.5 shadow-float"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <p className="truncate px-2.5 py-2 text-xs text-slate-500" title={email}>
-            {email}
-          </p>
-          <div className="my-1 h-px bg-slate-100" />
-          <Link href="/dashboard" className="menu-item" onClick={() => setOpen(false)}>
-            <FolderKanban size={15} className="text-slate-400" /> My Decks
-          </Link>
-          <form action={logoutAction}>
-            <button type="submit" className="menu-item text-rose-600 hover:bg-rose-50">
-              <LogOut size={15} /> Log out
-            </button>
-          </form>
-        </div>
-      )}
-    </div>
   );
 }

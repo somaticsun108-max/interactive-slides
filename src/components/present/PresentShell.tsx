@@ -184,12 +184,20 @@ export default function PresentShell({
         </>
       )}
       {backHref && !embed && (
-        <Link
-          href={backHref}
-          className="absolute right-4 top-4 z-20 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 ring-1 ring-white/10 backdrop-blur transition hover:bg-white/20 hover:text-white"
-        >
-          Back to editor
-        </Link>
+        <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
+          <Link
+            href="/dashboard"
+            className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 ring-1 ring-white/10 backdrop-blur transition hover:bg-white/20 hover:text-white"
+          >
+            All decks
+          </Link>
+          <Link
+            href={backHref}
+            className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 ring-1 ring-white/10 backdrop-blur transition hover:bg-white/20 hover:text-white"
+          >
+            Back to editor
+          </Link>
+        </div>
       )}
       {/* Edge click zones sit below the slide so they never block object actions. */}
       <button onClick={prev} aria-label="Previous slide" className="absolute left-0 top-0 z-0 h-full w-16 cursor-pointer opacity-0" />

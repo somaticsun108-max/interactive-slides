@@ -3,9 +3,23 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Copy, FilePlus2, FileText, LayoutTemplate, LogOut, MoreVertical, Pencil, Trash2 } from "lucide-react";
-import { logoutAction } from "@/app/actions/auth";
+import {
+  Copy,
+  FilePlus2,
+  FileText,
+  LayoutTemplate,
+  LogOut,
+  MoreVertical,
+  Pencil,
+  Presentation,
+  Trash2,
+} from "lucide-react";
+import { AppHeader } from "@/components/shared/AppHeader";
 import { TEMPLATES } from "@/lib/templates";
+import type { DeckSummary } from "@/lib/deck/store";
+import { getTheme } from "@/lib/deck/theme";
+import { fitScale, SlideFrame } from "@/components/slides/primitives";
+import SlideRenderer from "@/components/slides/SlideRenderer";
 import type { Deck, Slide } from "@/lib/types";
 import { loadLegacyDeck, clearLegacyDeck } from "@/lib/deck-cache";
 import SlideStatic from "@/components/shared/SlideStatic";
@@ -19,7 +33,16 @@ export interface DeckMeta {
   firstSlide: Slide | null;
 }
 
-export default function DashboardGrid({ decks, email }: { decks: DeckMeta[]; email: string }) {
+export default function DashboardGrid({
+  decks,
+  scriptDecks = [],
+  email,
+}: {
+  decks: DeckMeta[];
+  /** Decks generated from a script (Phase 0.5). Shown in their own section. */
+  scriptDecks?: DeckSummary[];
+  email: string;
+}) {
   const router = useRouter();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [legacyDeck, setLegacyDeck] = useState<string | null>(null);
@@ -117,37 +140,15 @@ export default function DashboardGrid({ decks, email }: { decks: DeckMeta[]; ema
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur">
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/dashboard"
-            className="grid h-8 w-8 place-items-center rounded-[10px] bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/40"
-          >
-            <LayoutTemplate size={16} strokeWidth={2.25} />
-          </Link>
-          <span className="text-[15px] font-semibold tracking-[-0.01em] text-slate-900">Interactive Slides</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="hidden text-xs text-slate-400 md:inline" title={email}>
-            {email}
-          </span>
-          <Link
-            href="/decks"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-            title="Decks generated from a script file"
-          >
-            <FileText size={14} /> Script decks
-          </Link>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
-            >
-              <LogOut size={15} /> Log out
-            </button>
-          </form>
-        </div>
-      </header>
+      <AppHeader userEmail={email} active="dashboard">
+        <Link
+          href="/decks"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+          title="Decks generated from a script file"
+        >
+          <FileText size={14} /> Import a script
+        </Link>
+      </AppHeader>
 
       <div className="mx-auto max-w-6xl px-6 py-9">
         <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
@@ -257,6 +258,80 @@ export default function DashboardGrid({ decks, email }: { decks: DeckMeta[]; ema
             ))}
           </div>
         )}
+
+        {/* ---------- script decks (Phase 0.5) ---------- */}
+        <section className="mt-10">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="text-[17px] font-semibold tracking-[-0.01em] text-slate-900">Script decks</h2>
+              <p className="mt-0.5 text-[13px] text-slate-500">
+                Generated deterministically from a script file — same rules, no AI.
+              </p>
+            </div>
+            <Link
+              href="/decks"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+            >
+              <FileText size={14} /> Import a script
+            </Link>
+          </div>
+
+          {scriptDecks.length === 0 ? (
+            <Link
+              href="/decks"
+              className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-4 py-5 transition hover:border-indigo-300 hover:bg-white"
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
+                <FileText size={18} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-slate-900">No script decks yet</span>
+                <span className="block text-[13px] text-slate-500">
+                  Paste or upload a script and get a branded, recordable deck.
+                </span>
+              </span>
+            </Link>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {scriptDecks.map((deck) => (
+                <div
+                  key={deck.id}
+                  className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-float"
+                >
+                  <Link href={`/deck/${deck.id}`} className="block">
+                    <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                      {deck.firstSlide ? (
+                        <SlideFrame theme={getTheme(deck.firstSlide.themeId)} scale={fitScale(400, 225, "cover")}>
+                          <SlideRenderer slide={deck.firstSlide} theme={getTheme(deck.firstSlide.themeId)} />
+                        </SlideFrame>
+                      ) : null}
+                      <span className="absolute left-2.5 top-2.5 rounded-full bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur">
+                        Script
+                      </span>
+                    </div>
+                  </Link>
+                  <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3.5 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold tracking-[-0.01em] text-slate-900" title={deck.title}>
+                        {deck.title}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-400">
+                        {deck.slideCount} slides · {deck.estMinutes} min
+                      </p>
+                    </div>
+                    <Link
+                      href={`/present/control?deckId=${deck.id}`}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                      title="Open the presenter window"
+                    >
+                      <Presentation size={13} /> Present
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       {pickerOpen && (

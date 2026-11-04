@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { FileText, Plus, Presentation } from "lucide-react";
+import { AppHeader } from "@/components/shared/AppHeader";
 import type { DeckSummary } from "@/lib/deck/store";
 import { getTheme } from "@/lib/deck/theme";
 import { fitScale, SlideFrame } from "@/components/slides/primitives";
@@ -15,36 +16,27 @@ import ImportScriptDialog from "./ImportScriptDialog";
  * script, look at the generated slides, present. Editing slides is out of scope
  * for Phase 0.5.
  */
-export default function DecksView({ decks, error }: { decks: DeckSummary[]; error?: string | null }) {
+export default function DecksView({
+  decks,
+  userEmail,
+  error,
+}: {
+  decks: DeckSummary[];
+  userEmail: string;
+  error?: string | null;
+}) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur">
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/decks"
-            className="grid h-8 w-8 place-items-center rounded-[10px] bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/40"
-          >
-            <Presentation size={16} strokeWidth={2.25} />
-          </Link>
-          <span className="text-[15px] font-semibold tracking-[-0.01em] text-slate-900">Script decks</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/dashboard"
-            className="rounded-lg px-2.5 py-2 text-[13px] font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
-          >
-            Dashboard
-          </Link>
-          <button
-            onClick={() => setDialogOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500"
-          >
-            <Plus size={16} /> Import script
-          </button>
-        </div>
-      </header>
+      <AppHeader userEmail={userEmail} active="script-decks">
+        <button
+          onClick={() => setDialogOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500"
+        >
+          <Plus size={16} /> Import script
+        </button>
+      </AppHeader>
 
       <div className="mx-auto max-w-6xl px-6 py-9">
         <div className="mb-7">
