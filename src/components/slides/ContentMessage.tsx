@@ -1,7 +1,15 @@
 import type { SlideView } from "@/lib/deck/slide-types";
 import type { Theme } from "@/lib/deck/theme";
 import { Eyebrow, Headline, SlideFrame, framePadding } from "./primitives";
-import { BODY_HEIGHT, BODY_WIDTH, fitFontSize } from "./fit";
+import {
+  BODY_HEIGHT,
+  BODY_WIDTH,
+  CONTENT_HEIGHT,
+  EYEBROW_BLOCK,
+  HEADING_GAP,
+  estimateTextHeight,
+  fitFontSize,
+} from "./fit";
 
 /** Body text never renders below this, even if it has to be clamped. */
 const MIN_BODY_PX = 20;
@@ -29,6 +37,32 @@ export default function ContentMessage({
   const isCta = variant === "cta";
   const body = slide.body[0];
 
+  // Measure the headline first, then give the body whatever vertical space is
+  // genuinely left. Scaling the body down without this was the bleed: a long
+  // headline ate the room the body needed.
+  const headlineSize = fitFontSize({
+    text: slide.headline,
+    maxFontSize: isCta ? theme.type.display : theme.type.h1,
+    minFontSize: theme.type.small,
+    widthPx: BODY_WIDTH,
+    availableHeightPx: CONTENT_HEIGHT - 160,
+    lineHeight: theme.type.lineHeight.heading,
+  });
+  const headlineHeight = estimateTextHeight(
+    slide.headline,
+    headlineSize,
+    BODY_WIDTH,
+    theme.type.lineHeight.heading
+  );
+  const availableBodyHeight = Math.max(
+    80,
+    CONTENT_HEIGHT -
+      (slide.eyebrow ? EYEBROW_BLOCK : 0) -
+      headlineHeight -
+      HEADING_GAP -
+      (isCta ? 64 : 0)
+  );
+
   // Scale the body down so long lines wrap inside the slide instead of
   // overflowing past the bottom edge. The cap is the theme's body size.
   const bodyFontSize = body
@@ -37,7 +71,7 @@ export default function ContentMessage({
         maxFontSize: theme.type.body,
         minFontSize: MIN_BODY_PX,
         widthPx: 900,
-        availableHeightPx: BODY_HEIGHT,
+        availableHeightPx: Math.min(BODY_HEIGHT, availableBodyHeight),
       })
     : theme.type.body;
 
@@ -45,7 +79,7 @@ export default function ContentMessage({
     <SlideFrame theme={theme} scale={scale}>
       <div className="relative flex h-full flex-col justify-center" style={framePadding}>
         <Eyebrow>{slide.eyebrow}</Eyebrow>
-        <Headline size={isCta ? "display" : "h1"} as="h2">
+        <Headline size={isCta ? "display" : "h1"} as="h2" fontSize={headlineSize}>
           {slide.headline}
         </Headline>
 
