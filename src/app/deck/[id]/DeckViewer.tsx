@@ -9,6 +9,7 @@ import { getTheme } from "@/lib/deck/theme";
 import { stepsOf } from "@/lib/deck/sync";
 import { fitScale, SlideFrame } from "@/components/slides/primitives";
 import SlideRenderer from "@/components/slides/SlideRenderer";
+import { AppHeader } from "@/components/shared/AppHeader";
 import PacingBadge from "@/components/slides/PacingBadge";
 
 /**
@@ -18,7 +19,7 @@ import PacingBadge from "@/components/slides/PacingBadge";
  * script → slides pipeline end to end, show the narration the presenter will
  * read, and hand off to the presenter window.
  */
-export default function DeckViewer({ deck }: { deck: Deck }) {
+export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail: string }) {
   const router = useRouter();
   const theme = getTheme(deck.themeId);
   const [index, setIndex] = useState(0);
@@ -52,26 +53,12 @@ export default function DeckViewer({ deck }: { deck: Deck }) {
 
   return (
     <main className="min-h-screen bg-slate-100 pb-16">
-      <header className="sticky top-0 z-20 flex h-14 flex-wrap items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur">
-        <Link
-          href="/decks"
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-        >
-          <ChevronLeft size={15} /> Decks
-        </Link>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-slate-900">{deck.title}</p>
-          <p className="text-[11px] text-slate-400">
-            {deck.slides.length} slides · {totalWords} narrated words · ~{totalMinutes} min
-          </p>
-        </div>
-        <button
-          onClick={present}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500"
-        >
-          <Presentation size={15} /> Present
-        </button>
-      </header>
+      <AppHeader
+        userEmail={userEmail}
+        active="script-decks"
+        backHref="/decks"
+        backLabel="Script decks"
+      />
 
       <div className="mx-auto max-w-[1180px] px-4 pt-6">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">

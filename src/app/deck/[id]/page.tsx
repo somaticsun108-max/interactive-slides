@@ -44,5 +44,5 @@ export default async function ScriptDeckPage({ params }: { params: Promise<{ id:
     );
   }
 
-  return <DeckViewer deck={row.deck} />;
+  return <DeckViewer deck={row.deck} userEmail={user.email ?? ""} />;
 }
