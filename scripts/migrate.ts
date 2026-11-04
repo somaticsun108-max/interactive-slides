@@ -22,6 +22,19 @@ const STATEMENTS = [
      created_at timestamptz NOT NULL DEFAULT now(),
      updated_at timestamptz NOT NULL DEFAULT now()
    )`,
+  // Phase 0.5: decks generated deterministically from a script file.
+  // Kept in its own table so the interactive editor's `decks` rows are untouched.
+  `CREATE TABLE IF NOT EXISTS script_decks (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     title text NOT NULL,
+     data jsonb NOT NULL,
+     script_raw text NOT NULL,
+     source_hash text NOT NULL,
+     created_at timestamptz NOT NULL DEFAULT now(),
+     updated_at timestamptz NOT NULL DEFAULT now()
+   )`,
+  `CREATE INDEX IF NOT EXISTS script_decks_owner_id_idx ON script_decks (owner_id)`,
   `CREATE INDEX IF NOT EXISTS decks_owner_id_idx ON decks (owner_id)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS decks_share_slug_idx ON decks (share_slug)`,
 ];

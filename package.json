@@ -7,7 +7,11 @@
     "build": "tsx scripts/migrate.ts && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "tsx scripts/migrate.ts"
+    "db:migrate": "tsx scripts/migrate.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "fonts:sync": "node scripts/download-inter-font.mjs",
+    "preview:deck": "tsx --tsconfig tsconfig.json scripts/render-deck-preview.tsx"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -27,14 +31,21 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.7",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^25.0.1",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.23.15",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.9"
   }
 }
