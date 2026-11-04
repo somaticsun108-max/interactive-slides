@@ -22,7 +22,11 @@ export const authConfig = {
       const isLoggedIn = !!auth?.user;
       const path = nextUrl.pathname;
       const isProtected =
-        path === "/" || path.startsWith("/dashboard") || path.startsWith("/deck") || path.startsWith("/present");
+        path === "/" ||
+        path.startsWith("/dashboard") ||
+        path.startsWith("/deck") ||
+        path.startsWith("/decks") ||
+        path.startsWith("/present");
       const isAuthPage = path === "/login" || path === "/signup";
 
       if (isAuthPage) return isLoggedIn ? Response.redirect(new URL("/dashboard", nextUrl)) : true;
