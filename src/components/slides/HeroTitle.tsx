@@ -1,6 +1,6 @@
 import type { SlideView } from "@/lib/deck/slide-types";
 import type { Theme } from "@/lib/deck/theme";
-import { Eyebrow, Headline, SlideFrame, framePadding } from "./primitives";
+import { AccentShapes, Eyebrow, Headline, SlideFrame, framePadding } from "./primitives";
 import { fitFontSize } from "./fit";
 
 /**
@@ -27,6 +27,7 @@ export default function HeroTitle({
 
   return (
     <SlideFrame theme={theme} scale={scale} style={{ background: "var(--slide-paper)" }}>
+      <AccentShapes variant="band" opacity={0.12} />
       <div className="relative flex h-full flex-col justify-center" style={framePadding}>
         {/* A single brand rule — the only ornament on the title slide. */}
         <div
@@ -35,7 +36,9 @@ export default function HeroTitle({
             width: 96,
             height: 6,
             borderRadius: "var(--slide-radius-pill)",
-            background: "var(--slide-accent)",
+            // Two accents rather than one: a small cue that this is not a
+            // single-colour deck.
+            background: "linear-gradient(90deg, var(--slide-accent), var(--slide-accent-2))",
             marginBottom: "var(--slide-space-lg)",
           }}
         />

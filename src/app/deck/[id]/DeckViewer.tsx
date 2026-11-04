@@ -25,14 +25,18 @@ export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail:
   const router = useRouter();
   // The deck's saved preference wins; decks imported before themes existed fall
   // back to their `themeId`, then to the default palette.
+  // A deck with no saved preference uses the palette it was generated with.
+  // ("terracotta" is the picker's placeholder, so it must not count as a
+  // choice — otherwise opening a deck would silently restyle it.)
   const [themePref, setThemePref] = useState<DeckTheme | undefined>(
-    deck.theme ?? (deck.themeId ? { themeId: deck.themeId } : undefined)
+    deck.theme ??
+      (deck.themeId && deck.themeId !== "terracotta" ? { themeId: deck.themeId } : undefined)
   );
   const theme = getTheme(themePref);
   const [saving, startSaving] = useTransition();
 
   function changeTheme(patch: Partial<DeckTheme>) {
-    const next: DeckTheme = { ...(themePref ?? { themeId: "terracotta" }), ...patch };
+    const next: DeckTheme = { ...(themePref ?? { themeId: deck.themeId }), ...patch };
     setThemePref(next);
     // Persist in the background: re-styling is cheap and the preview is
     // instant, so the deck does not have to reload to show it.

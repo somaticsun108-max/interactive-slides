@@ -5,9 +5,11 @@ import { ArrowDown, ArrowUp, ChevronsDown, ChevronsUp, Trash2 } from "lucide-rea
 import { useCurrentSlide, useDeck } from "@/store/deckStore";
 import type { Slide, SlideObject } from "@/lib/types";
 import EmojiPicker from "./EmojiPicker";
+import ThemeColorPicker from "./ThemeColorPicker";
 import ActionEditor from "./ActionEditor";
 import { ICON_MAP } from "@/components/shared/objects/iconMap";
 import { MAX_UPLOAD_LABEL, validateImageFile } from "@/lib/upload-limits";
+import { resolveTheme, themeBackgrounds } from "@/lib/theming/themes";
 
 /** Uploaded/inline sources (blob URLs, data URLs) are not user-editable text. */
 function isStoredSrc(src: string): boolean {
@@ -103,7 +105,7 @@ function TextSection({ id, text: t }: { id: string; text: NonNullable<SlideObjec
       />
       <div className="mt-2 grid grid-cols-2 gap-2">
         <NumberField label="Size" value={t.fontSize} onChange={(fontSize) => updateTextProps(id, { fontSize })} />
-        <ColorField label="Color" value={t.color} onChange={(color) => updateTextProps(id, { color })} />
+        <ThemeColorPicker label="Color" value={t.color} onChange={(color) => updateTextProps(id, { color })} />
       </div>
       <div className="mt-2 flex gap-1">
         {[400, 600, 700, 800].map((w) => (
@@ -135,7 +137,7 @@ function ShapeSection({ id, shape: sh }: { id: string; shape: NonNullable<SlideO
         ))}
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <ColorField label="Fill" value={sh.fill} onChange={(fill) => updateShapeProps(id, { fill })} />
+        <ThemeColorPicker label="Fill" value={sh.fill} onChange={(fill) => updateShapeProps(id, { fill })} />
         {sh.shape === "rect" && (
           <NumberField label="Radius" value={sh.radius ?? 0} onChange={(radius) => updateShapeProps(id, { radius })} />
         )}
@@ -243,7 +245,7 @@ function ClipartSection({ id, clipart }: { id: string; clipart: NonNullable<Slid
       </div>
       {clipart.icon && (
         <div className="mt-2">
-          <ColorField label="Icon color" value={clipart.iconColor ?? "#0f172a"} onChange={(iconColor) => updateClipartProps(id, { iconColor })} />
+          <ThemeColorPicker label="Icon color" value={clipart.iconColor ?? "#0f172a"} onChange={(iconColor) => updateClipartProps(id, { iconColor })} />
         </div>
       )}
       {pickerOpen && (
@@ -278,8 +280,8 @@ function ButtonSection({ id, button }: { id: string; button: NonNullable<SlideOb
         />
       </label>
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <ColorField label="Fill" value={button.fill} onChange={(fill) => updateButtonProps(id, { fill })} />
-        <ColorField label="Text" value={button.textColor} onChange={(textColor) => updateButtonProps(id, { textColor })} />
+        <ThemeColorPicker label="Fill" value={button.fill} onChange={(fill) => updateButtonProps(id, { fill })} />
+        <ThemeColorPicker label="Text" value={button.textColor} onChange={(textColor) => updateButtonProps(id, { textColor })} />
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2">
         <NumberField label="Font size" value={button.fontSize} onChange={(fontSize) => updateButtonProps(id, { fontSize })} />
@@ -300,10 +302,48 @@ function BackgroundSection() {
   const slide = useCurrentSlide();
   const updateBackground = useDeck((s) => s.updateBackground);
   const setSlideTransition = useDeck((s) => s.setSlideTransition);
+  const theme = resolveTheme(useDeck((s) => s.deck.theme));
   const bg = slide.background;
   return (
     <div className="mt-6 border-t border-slate-100 pt-4">
       <Section title="Slide background">
+        {/* The theme's own backgrounds as one-click options: this is what makes
+            switching theme visible on a slide instead of a hidden accent. */}
+        <div className="mb-2.5">
+          <span className="field-label">From your theme</span>
+          <div className="flex flex-wrap gap-1.5" data-testid="theme-backgrounds">
+            {themeBackgrounds(theme).map((option) => {
+              const selected =
+                (bg.type === "gradient" && bg.from === option.from && bg.to === (option.to ?? bg.to)) ||
+                (bg.type === "solid" && bg.color === option.from);
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  title={option.name}
+                  aria-label={option.name}
+                  aria-pressed={selected}
+                  data-testid={`theme-background-${option.id}`}
+                  onClick={() =>
+                    updateBackground(
+                      option.to
+                        ? { type: "gradient", from: option.from, to: option.to, angle: option.angle ?? 135 }
+                        : { type: "solid", color: option.from }
+                    )
+                  }
+                  className={`h-8 w-8 rounded-lg ring-1 ring-inset transition hover:scale-105 ${
+                    selected ? "ring-2 ring-slate-900" : "ring-black/10"
+                  }`}
+                  style={{
+                    background: option.to
+                      ? `linear-gradient(${option.angle ?? 135}deg, ${option.from}, ${option.to})`
+                      : option.from,
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
         <div className="flex gap-1">
           {(["solid", "gradient"] as const).map((k) => (
             <SmallBtn key={k} onClick={() => updateBackground({ type: k })} active={bg.type === k}>
@@ -313,14 +353,14 @@ function BackgroundSection() {
         </div>
         {bg.type === "solid" && (
           <div className="mt-2">
-            <ColorField label="Color" value={bg.color} onChange={(color) => updateBackground({ color })} />
+            <ThemeColorPicker label="Color" value={bg.color} onChange={(color) => updateBackground({ color })} />
           </div>
         )}
         {bg.type === "gradient" && (
           <div className="mt-2 space-y-2">
             <div className="grid grid-cols-3 gap-2">
-              <ColorField label="From" value={bg.from} onChange={(from) => updateBackground({ from })} />
-              <ColorField label="To" value={bg.to} onChange={(to) => updateBackground({ to })} />
+              <ThemeColorPicker label="From" value={bg.from} onChange={(from) => updateBackground({ from })} />
+              <ThemeColorPicker label="To" value={bg.to} onChange={(to) => updateBackground({ to })} />
               <NumberField label="Angle" value={bg.angle} onChange={(angle) => updateBackground({ angle })} />
             </div>
           </div>

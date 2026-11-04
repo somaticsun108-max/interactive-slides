@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { SlideView } from "@/lib/deck/slide-types";
 import type { Theme } from "@/lib/deck/theme";
-import { Eyebrow, Headline, SlideFrame, framePadding } from "./primitives";
+import { AccentShapes, Eyebrow, Headline, SlideFrame, framePadding } from "./primitives";
 import {
   BODY_HEIGHT,
   BODY_WIDTH,
@@ -79,6 +79,7 @@ export default function ContentSteps({
 
   return (
     <SlideFrame theme={theme} scale={scale}>
+      <AccentShapes variant="corner" opacity={0.08} />
       <div className="relative flex h-full flex-col justify-center" style={framePadding}>
         <Eyebrow>{slide.eyebrow}</Eyebrow>
         <Headline size="h1" as="h2" fontSize={headlineSize}>
@@ -137,9 +138,22 @@ export default function ContentSteps({
                       height: "1.45em",
                       flex: "none",
                       borderRadius: "var(--slide-radius-pill)",
-                      background: revealed ? "var(--slide-accent-wash)" : "transparent",
+                      // Steps cycle through the palette so a list reads as a
+                      // set of distinct items, not five identical chips.
+                      background: revealed
+                        ? index % 3 === 0
+                          ? "var(--slide-accent-wash)"
+                          : index % 3 === 1
+                            ? "var(--slide-accent-2)"
+                            : "var(--slide-accent-3)"
+                        : "transparent",
                       border: "1px solid var(--slide-line)",
-                      color: "var(--slide-accent)",
+                      color:
+                        index % 3 === 0
+                          ? "var(--slide-accent)"
+                          : index % 3 === 1
+                            ? "var(--slide-accent-2-ink)"
+                            : "var(--slide-accent-3-ink)",
                       fontSize: "0.72em",
                       fontWeight: 700,
                       fontVariantNumeric: "tabular-nums",

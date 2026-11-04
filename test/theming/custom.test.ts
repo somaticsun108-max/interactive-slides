@@ -12,6 +12,7 @@ import {
   swatchFor,
 } from "@/lib/theming/themes";
 import { getTheme } from "@/lib/deck/theme";
+import { getThemeById } from "@/lib/theming/themes";
 
 /** Seeds a person might plausibly pick, including the awkward ones. */
 const SEEDS = [
@@ -125,11 +126,29 @@ describe("resolveTheme picks built-in or custom", () => {
     expect(faithful.accents.every((a) => a.text === "#FFFFFF")).toBe(true);
   });
 
-  it("applies a background override to either kind", () => {
-    expect(resolveTheme({ themeId: "pastel", background: "#EEF3EC" }).bg).toBe("#EEF3EC");
-    expect(
-      resolveTheme({ themeId: "custom", custom: { seed: "#487BFF" }, background: "#F3F6FA" }).bg
-    ).toBe("#F3F6FA");
+  it("resolves a background override into the slide surface", () => {
+    // The override is a surface, not the theme's paper — reading it from
+    // `surface` is what keeps themes and backgrounds independent.
+    const fixed = resolveTheme({ themeId: "pastel", background: "#EEF3EC" });
+    expect(fixed.surface).toEqual({ from: "#EEF3EC" });
+    // The theme's own paper is untouched by the override.
+    expect(fixed.bg).toBe(getThemeById("pastel").bg);
+
+    const derived = resolveTheme({ themeId: "ocean", background: "wash-1" });
+    expect(derived.surface.from).toMatch(/^#[0-9A-F]{6}$/);
+    expect(derived.surface.from).not.toBe(getThemeById("ocean").bg);
+  });
+
+  it("falls back to the theme paper when no background is chosen", () => {
+    expect(resolveTheme({ themeId: "ocean" }).surface).toEqual({ from: getThemeById("ocean").bg });
+  });
+
+  it("never mistakes a background id for a colour", () => {
+    // Regression: assigning the id to `bg` crashed with "Not a hex colour".
+    for (const id of ["paper", "wash-1", "wash-4", "gradient", "statement"]) {
+      expect(() => resolveTheme({ themeId: "spectrum", background: id })).not.toThrow();
+      expect(resolveTheme({ themeId: "spectrum", background: id }).surface.from).toMatch(/^#[0-9A-F]{6}$/i);
+    }
   });
 
   it("falls back to the default theme for an unknown id", () => {
@@ -152,7 +171,8 @@ describe("the component contract accepts a custom theme", () => {
   it("keeps the built-in path working from a bare id", () => {
     const theme = getTheme("spectrum");
     expect(theme.id).toBe("spectrum");
-    expect(theme.colors.paper).toBe("#FFFFFF");
+    // The palette's own paper, not a hardcoded white.
+    expect(theme.colors.paper).toBe(getThemeById("spectrum").bg);
   });
 
   it("exposes the selection colour to every theme", () => {
