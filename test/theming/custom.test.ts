@@ -1,20 +1,15 @@
 import { describe, expect, it } from "vitest";
-import {
-  SELECT_COLOR,
-  THEMES,
-  contrast,
-  customSwatch,
-  customToTheme,
-  parseHex,
-  resolveDeckTheme,
-  resolveTheme,
-  rgbToHsl,
-  swatchFor,
-} from "@/lib/theming/themes";
+import { MOOD_IDS, BRANCH_PRESETS } from "@/lib/theming/mindmap";
+import { resolveDeckTheme } from "@/lib/theming/deck-theme";
+import { backgroundChoices } from "@/lib/theming/backgrounds";
+import { contrast } from "@/lib/theming/roles";
 import { getTheme } from "@/lib/deck/theme";
-import { getThemeById } from "@/lib/theming/themes";
+import { normaliseThemePref, isLegacyTemplateDefault, resolveStoredColour } from "@/lib/theming/legacy";
 
-/** Seeds a person might plausibly pick, including the awkward ones. */
+/**
+ * Seeds a person might plausibly pick, including the awkward ones: maximum
+ * saturation, near-white, pure grey (no hue), and near-black.
+ */
 const SEEDS = [
   "#BA594A",
   "#487BFF",
@@ -22,194 +17,182 @@ const SEEDS = [
   "#F59F00",
   "#2D3748",
   "#22D3EE",
-  "#00FF00", // maximum saturation — the hardest case for a 4.5:1 fill
-  "#FFFF00", // very light
-  "#7F7F7F", // pure grey: no hue to rotate
+  "#00FF00",
+  "#FFFF00",
+  "#7F7F7F",
 ];
 
-describe("custom themes", () => {
-  it("derives a legible palette from any seed", () => {
+describe("a brand palette built from one seed", () => {
+  it("replaces the accents while leaving the mood's canvas in place", () => {
+    const theme = resolveDeckTheme({ palette: ["#2E8B74"] });
+    expect(theme.paletteOverridden).toBe(true);
+    expect(theme.roles.categorical.every((c) => c === "#2E8B74")).toBe(true);
+    // The palette override is a *brand palette*: accents only. The canvas
+    // still comes from the default mood, which migration supplies.
+    expect(theme.mood).toBe("terracotta");
+    expect(theme.roles.canvas).toBe(resolveDeckTheme({ mood: "terracotta" }).roles.canvas);
+  });
+
+  it("gets a readable foreground on the seed, whatever the seed is", () => {
     for (const seed of SEEDS) {
-      for (const mode of ["legible", "faithful"] as const) {
-        const theme = customToTheme({ seed, mode });
-        // Body text on the background.
-        expect(contrast(theme.ink, theme.bg), `${seed} ${mode} ink/bg`).toBeGreaterThanOrEqual(4.5);
-        // Text on every generated fill — the whole point of deriving it.
-        for (const [index, accent] of theme.accents.entries()) {
-          const ratio = contrast(accent.text, accent.fill);
-          expect(ratio, `${seed} ${mode} accent-${index + 1} (${accent.fill})`).toBeGreaterThanOrEqual(4.5);
-        }
-        // Lines stay visible against the background.
-        for (const accent of theme.accents) {
-          expect(contrast(accent.line, theme.bg)).toBeGreaterThanOrEqual(3);
-        }
+      const theme = resolveDeckTheme({ palette: [seed] });
+      for (const accent of theme.accents) {
+        expect(contrast(accent.text, accent.fill), seed).toBeGreaterThanOrEqual(4.5);
       }
     }
   });
 
-  it("never produces pure black text", () => {
+  it("keeps a readable body text on the mood's canvas", () => {
     for (const seed of SEEDS) {
-      const theme = customToTheme({ seed });
-      for (const colour of [theme.ink, theme.inkMuted, ...theme.accents.map((a) => a.text)]) {
-        expect(colour.toUpperCase()).not.toBe("#000000");
+      for (const mood of ["terracotta", "midnight", "carbonMono", "softPastel"]) {
+        const theme = resolveDeckTheme({ mood, palette: [seed] });
+        expect(contrast(theme.roles.text, theme.roles.canvas), `${seed}/${mood}`).toBeGreaterThanOrEqual(
+          4.5
+        );
       }
     }
   });
 
-  it("keeps the seed as the first accent", () => {
-    // The colour someone picked must be visible in the result, not averaged
-    // away — the first accent stays on the seed's hue.
-    for (const seed of ["#BA594A", "#487BFF", "#2D3748"]) {
-      const theme = customToTheme({ seed });
-      const seedHue = rgbToHsl(parseHex(seed)).h;
-      const accentHue = rgbToHsl(parseHex(theme.accents[0].fill)).h;
-      expect(Math.abs(accentHue - seedHue)).toBeLessThan(6);
-    }
-  });
-
-  it("generates six accents", () => {
-    expect(customToTheme({ seed: "#BA594A" }).accents).toHaveLength(6);
-  });
-
-  it("is deterministic — the same seed always gives the same theme", () => {
-    const a = customToTheme({ seed: "#487BFF" });
-    const b = customToTheme({ seed: "#487BFF" });
-    expect(a.accents.map((x) => x.fill)).toEqual(b.accents.map((x) => x.fill));
-    expect(a.ink).toBe(b.ink);
-  });
-
-  it("honours a chosen background", () => {
-    const theme = customToTheme({ seed: "#BA594A", bg: "#FAF6F1" });
-    expect(theme.bg).toBe("#FAF6F1");
-    // And the ink is still readable on it.
-    expect(contrast(theme.ink, theme.bg)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it("keeps a dark background dark and lightens the ink to suit", () => {
-    const theme = customToTheme({ seed: "#487BFF", bg: "#1F2733" });
-    expect(contrast(theme.ink, theme.bg)).toBeGreaterThanOrEqual(4.5);
-    // Ink must be light on a dark background, not the usual dark grey.
-    expect(rgbToHsl(parseHex(theme.ink)).l).toBeGreaterThan(70);
-  });
-
-  it("uses white text only in faithful mode", () => {
-    const legible = customToTheme({ seed: "#487BFF" });
-    const faithful = customToTheme({ seed: "#487BFF", mode: "faithful" });
-    expect(faithful.accents.every((a) => a.text === "#FFFFFF")).toBe(true);
-    // The legible build is allowed to pick ink where it reads better.
-    expect(legible.accents.some((a) => a.text !== "#FFFFFF")).toBe(true);
-  });
-
-  it("swatches the background plus the first accents", () => {
-    const swatch = customSwatch({ seed: "#BA594A" });
-    expect(swatch).toHaveLength(4);
-    expect(swatch[0]).toBe("#FFFFFF");
+  it("does not move the canvas", () => {
+    const plain = resolveDeckTheme({ mood: "mutedOcean" });
+    const branded = resolveDeckTheme({ mood: "mutedOcean", palette: ["#00FF00"] });
+    expect(branded.roles.canvas).toBe(plain.roles.canvas);
   });
 });
 
-describe("resolveTheme picks built-in or custom", () => {
-  it("resolves a built-in by id", () => {
-    const theme = resolveTheme({ themeId: "ocean" });
-    expect(theme.id).toBe("ocean");
-    expect(theme.bg).toBe("#F3F6FA");
-  });
-
-  it("resolves a custom theme when a seed is present", () => {
-    const theme = resolveTheme({ themeId: "custom", custom: { seed: "#2E8B74" } });
-    expect(theme.id).toBe("custom");
-    expect(theme.accents).toHaveLength(6);
-  });
-
-  it("applies the faithful toggle to a custom theme", () => {
-    const faithful = resolveTheme({ themeId: "custom", custom: { seed: "#487BFF" }, faithful: true });
-    expect(faithful.faithful).toBe(true);
-    expect(faithful.accents.every((a) => a.text === "#FFFFFF")).toBe(true);
-  });
-
-  it("resolves a background override into the slide surface", () => {
-    // The override is a surface, not the theme's paper — reading it from
-    // `surface` is what keeps themes and backgrounds independent.
-    const fixed = resolveTheme({ themeId: "pastel", background: "#EEF3EC" });
-    expect(fixed.surface).toEqual({ from: "#EEF3EC" });
-    // The theme's own paper is untouched by the override.
-    expect(fixed.bg).toBe(getThemeById("pastel").bg);
-
-    const derived = resolveTheme({ themeId: "ocean", background: "wash-1" });
-    expect(derived.surface.from).toMatch(/^#[0-9A-F]{6}$/);
-    expect(derived.surface.from).not.toBe(getThemeById("ocean").bg);
-  });
-
-  it("falls back to the theme paper when no background is chosen", () => {
-    expect(resolveTheme({ themeId: "ocean" }).surface).toEqual({ from: getThemeById("ocean").bg });
-  });
-
-  it("never mistakes a background id for a colour", () => {
-    // Regression: assigning the id to `bg` crashed with "Not a hex colour".
-    for (const id of ["paper", "wash-1", "wash-4", "gradient", "statement"]) {
-      expect(() => resolveTheme({ themeId: "spectrum", background: id })).not.toThrow();
-      expect(resolveTheme({ themeId: "spectrum", background: id }).surface.from).toMatch(/^#[0-9A-F]{6}$/i);
-    }
-  });
-
-  it("falls back to the default theme for an unknown id", () => {
-    expect(resolveTheme({ themeId: "does-not-exist" }).id).toBe("terracotta");
-  });
-});
-
-describe("the component contract accepts a custom theme", () => {
-  it("builds the layout theme from a seed", () => {
-    const theme = getTheme({ themeId: "custom", custom: { seed: "#7B4FE0" } });
-    expect(theme.id).toBe("custom");
-    // Accent + its derived text colour reach the components.
-    expect(theme.colors.accent).toMatch(/^#[0-9A-F]{6}$/);
-    expect(contrast(theme.colors.accentInk, theme.colors.accent)).toBeGreaterThanOrEqual(4.5);
-    // Type scale and shape are unchanged by theming.
-    expect(theme.type.body).toBe(28);
-    expect(theme.type.small).toBe(20);
-  });
-
-  it("keeps the built-in path working from a bare id", () => {
-    const theme = getTheme("spectrum");
-    expect(theme.id).toBe("spectrum");
-    // The palette's own paper, not a hardcoded white.
-    expect(theme.colors.paper).toBe(getThemeById("spectrum").bg);
-  });
-
-  it("exposes the selection colour to every theme", () => {
-    expect(SELECT_COLOR).toBe("#12A8F0");
-  });
-});
-
-describe("built-in palettes need no exceptions", () => {
-  it("records any fill it had to adjust, instead of changing it silently", () => {
-    // Adjustment is legitimate (a specified fill that cannot reach 4.5:1 is
-    // nudged in lightness), but it must always be visible on the theme object
-    // and must land on a legible pair.
-    for (const theme of THEMES) {
-      for (const change of theme.adjustedFills ?? []) {
-        expect(change.from).toMatch(/^#[0-9A-F]{6}$/);
-        expect(change.to).toMatch(/^#[0-9A-F]{6}$/);
-        expect(change.to).not.toBe(change.from);
+describe("named branch palettes", () => {
+  it("every preset is usable as a brand palette", () => {
+    for (const [id, preset] of Object.entries(BRANCH_PRESETS)) {
+      const theme = resolveDeckTheme({ palette: [...preset.colors] });
+      expect(theme.roles.categorical.length).toBeGreaterThan(0);
+      for (const accent of theme.accents) {
+        expect(contrast(accent.text, accent.fill), `${id}: ${accent.fill}`).toBeGreaterThanOrEqual(4.5);
       }
-      // Either nothing moved, or the record accounts for every moved fill.
-      const moved = theme.accents.filter((a) =>
-        (theme.adjustedFills ?? []).some((c) => c.to === a.fill)
-      );
-      expect(moved.length).toBe(theme.adjustedFills?.length ?? 0);
+    }
+  });
+});
+
+describe("the component contract", () => {
+  it("exposes accent pairs the layouts can use directly", () => {
+    const theme = getTheme({ mood: "ocean" });
+    expect(theme.colors.accents.length).toBe(theme.colors.accentInks.length);
+    theme.colors.accents.forEach((fill, index) => {
+      expect(contrast(theme.colors.accentInks[index], fill)).toBeGreaterThanOrEqual(4.5);
+    });
+  });
+
+  it("carries the resolved roles through", () => {
+    const theme = getTheme({ mood: "graphite" });
+    expect(theme.roles.canvas).toBe(theme.colors.paper);
+    expect(theme.roles.text).toBe(theme.colors.ink);
+  });
+
+  it("resolves a bare string as a mood id when one exists", () => {
+    // Both "ocean" and "mutedOcean" are real moods. A bare string must mean the
+    // mood it names, not be migrated as if it were a legacy palette id.
+    expect(getTheme("ocean").colors.paper).toBe(resolveDeckTheme({ mood: "ocean" }).roles.canvas);
+    expect(getTheme("mutedOcean").colors.paper).toBe(
+      resolveDeckTheme({ mood: "mutedOcean" }).roles.canvas
+    );
+    expect(getTheme("midnight").colors.paper).toBe(
+      resolveDeckTheme({ mood: "midnight" }).roles.canvas
+    );
+  });
+
+  it("migrates a bare legacy id that is not a mood", () => {
+    // "vivid-video" was a palette this app shipped and the studio never had.
+    expect(getTheme("vivid-video").colors.paper).toBe(
+      resolveDeckTheme({ mood: "colourBurst" }).roles.canvas
+    );
+  });
+});
+
+describe("legacy preference migration", () => {
+  it("maps a legacy palette id onto the studio's mood of the same name", () => {
+    for (const id of ["terracotta", "spectrum", "ocean", "forest", "earth", "monochrome"]) {
+      const { pref, legacy } = normaliseThemePref({ themeId: id });
+      expect(pref.mood, id).toBeTruthy();
+      expect(legacy).toBe("migrated");
     }
   });
 
-  it("swatches every built-in", () => {
-    for (const theme of THEMES) {
-      const swatch = swatchFor(theme);
-      expect(swatch).toHaveLength(4);
-      expect(swatch.every((c) => /^#[0-9A-F]{6}$/.test(c))).toBe(true);
+  it("maps the two palettes the studio has no equivalent for", () => {
+    expect(normaliseThemePref({ themeId: "vivid-video" }).pref.mood).toBe("colourBurst");
+    expect(normaliseThemePref({ themeId: "dark" }).pref.mood).toBe("midnight");
+  });
+
+  it("keeps every real customisation while migrating the id", () => {
+    const { pref } = normaliseThemePref({
+      themeId: "ocean",
+      background: "#EEF3EC",
+      faithful: true,
+      palette: ["#123456"],
+    });
+    // "ocean" was already a legacy id for the legible ocean mood, so it maps
+    // there rather than to the saturated "ocean" mood of the same name.
+    expect(pref.mood).toBe("mutedOcean");
+    expect(pref.background).toBe("#EEF3EC");
+    expect(pref.faithful).toBe(true);
+    expect(pref.palette).toEqual(["#123456"]);
+  });
+
+  it("leaves a current preference untouched", () => {
+    const current = { mood: "mutedOcean" as const, background: "wash-2" };
+    const result = normaliseThemePref(current);
+    expect(result.pref).toEqual(current);
+    expect(result.legacy).toBe("current");
+  });
+
+  it("gives a deck with no preference the studio default", () => {
+    const { pref, legacy } = normaliseThemePref(null);
+    expect(pref.mood).toBe("terracotta");
+    expect(legacy).toBe("none");
+  });
+
+  it("falls back rather than rendering nothing for an unknown id", () => {
+    const { pref, unmapped } = normaliseThemePref({ themeId: "retired-palette" });
+    expect(pref.mood).toBe("terracotta");
+    expect(unmapped).toBe("retired-palette");
+  });
+});
+
+describe("legacy template defaults versus real choices", () => {
+  it("recognises the retired template colours", () => {
+    expect(isLegacyTemplateDefault("#4f46e5")).toBe(true);
+    expect(isLegacyTemplateDefault("#FFFFFF")).toBe(true);
+    expect(isLegacyTemplateDefault("#0f172a")).toBe(true);
+  });
+
+  it("does not mistake a deliberate colour for a default", () => {
+    expect(isLegacyTemplateDefault("#2B6F8E")).toBe(false);
+    expect(isLegacyTemplateDefault("#BA594A")).toBe(false);
+  });
+
+  it("lets a legacy default follow the theme while preserving a real choice", () => {
+    expect(resolveStoredColour("#4f46e5", "#2B6F8E")).toEqual({
+      colour: "#2B6F8E",
+      source: "theme",
+    });
+    expect(resolveStoredColour("#123456", "#2B6F8E")).toEqual({
+      colour: "#123456",
+      source: "explicit",
+    });
+    expect(resolveStoredColour(null, "#2B6F8E")).toEqual({ colour: "#2B6F8E", source: "theme" });
+  });
+});
+
+describe("backgrounds", () => {
+  it("offers every mood a theme-relative canvas plus neutrals and darks", () => {
+    for (const mood of MOOD_IDS) {
+      const choices = backgroundChoices(resolveDeckTheme({ mood }));
+      expect(choices.filter((c) => c.group === "theme").length).toBeGreaterThan(3);
+      expect(choices.some((c) => c.id === "paper-white")).toBe(true);
+      expect(choices.some((c) => c.group === "dark")).toBe(true);
     }
   });
 
-  it("resolves a deck preference with no theme at all", () => {
-    expect(resolveDeckTheme(undefined).id).toBe("terracotta");
-    expect(resolveDeckTheme({}).id).toBe("terracotta");
-    expect(resolveDeckTheme({ themeId: null }).id).toBe("terracotta");
+  it("has unique ids, so a stored choice is unambiguous", () => {
+    const ids = backgroundChoices(resolveDeckTheme({ mood: "ocean" })).map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

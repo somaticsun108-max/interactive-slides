@@ -221,7 +221,7 @@ function PresentObject({ obj, expanded, onClick }: { obj: SlideObject; expanded:
         transform: expanded ? "scale(1.12)" : undefined,
         transition: "transform 0.2s ease",
         transformOrigin: "center",
-        outline: expanded ? "3px solid #4f46e5" : undefined,
+        outline: expanded ? "3px solid var(--role-focus)" : undefined,
       }}
     >
       <ObjectView obj={obj} />

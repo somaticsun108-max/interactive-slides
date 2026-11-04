@@ -2,14 +2,19 @@ import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import ThemeColorPicker from "@/components/editor/ThemeColorPicker";
 import { useDeck } from "@/store/deckStore";
-import { resolveTheme } from "@/lib/theming/themes";
+import { resolveDeckTheme } from "@/lib/theming/deck-theme";
 
 /**
  * The complaint this replaces: the only colour control was a raw
  * `<input type="color">`, so there was no way to pick *from the theme*.
  */
+/** Sets the deck's colour mood; legacy ids are migrated by the resolver. */
 function withTheme(themeId: string) {
   useDeck.getState().setTheme({ themeId });
+}
+
+function themeOf(themeId: string) {
+  return resolveDeckTheme({ themeId });
 }
 
 describe("theme colour picker", () => {
@@ -18,7 +23,7 @@ describe("theme colour picker", () => {
     render(<ThemeColorPicker label="Fill" value="#2B6F8E" onChange={() => {}} />);
     fireEvent.click(screen.getByTestId("colour-button-fill"));
 
-    const theme = resolveTheme({ themeId: "ocean" });
+    const theme = themeOf("ocean");
     for (const accent of theme.accents) {
       expect(screen.getByLabelText(new RegExp(accent.fill, "i"))).toBeTruthy();
     }
@@ -28,7 +33,7 @@ describe("theme colour picker", () => {
     withTheme("terracotta");
     render(<ThemeColorPicker label="Fill" value="#BA594A" onChange={() => {}} />);
     fireEvent.click(screen.getByTestId("colour-button-fill"));
-    const theme = resolveTheme({ themeId: "terracotta" });
+    const theme = themeOf("terracotta");
     // Title text carries the contrast note that makes a swatch safe to pick.
     expect(
       screen.getByLabelText(`Accent 1 ${theme.accents[0].fill} · text ${theme.accents[0].text}`)
@@ -41,7 +46,7 @@ describe("theme colour picker", () => {
     render(<ThemeColorPicker label="Fill" value="#F4A6A0" onChange={(v) => (chosen = v)} />);
     fireEvent.click(screen.getByTestId("colour-button-fill"));
 
-    const theme = resolveTheme({ themeId: "pastel" });
+    const theme = themeOf("pastel");
     const target = theme.accents[2].fill;
     fireEvent.click(screen.getByLabelText(new RegExp(`^Accent 3`)));
     expect(chosen).toBe(target);
@@ -66,7 +71,7 @@ describe("theme colour picker", () => {
     // The theme's own background is pickable, which is what makes text sit on
     // the paper rather than "some hex someone remembered".
     expect(screen.getByLabelText(/^Theme ink #/)).toBeTruthy();
-    expect(screen.getByLabelText("White #FFFFFF")).toBeTruthy();
+    expect(screen.getByLabelText(/Surface #/)).toBeTruthy();
   });
 
   it("marks swatches that would not read as text", () => {

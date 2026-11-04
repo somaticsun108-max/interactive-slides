@@ -262,222 +262,10 @@ export function rotate(hex: string, degrees: number): string {
   return toHex(hslToRgb({ ...hsl, h: hsl.h + degrees }));
 }
 
-/* ------------------------------------------------------------------ */
-/* Theme definition                                                    */
-/* ------------------------------------------------------------------ */
+import type { ResolvedTheme } from "./roles";
 
-export interface AccentToken {
-  /** Object fill (cards, buttons, clickable hotspots). */
-  fill: string;
-  /** Text on that fill, chosen for contrast. */
-  text: string;
-  /** Stroke/border colour, ≥ 3:1 against the theme background. */
-  line: string;
-}
-
+/** Which accent the next new object takes. */
 export type AccentMode = "single" | "rainbow" | "alternate";
-
-export interface Theme {
-  id: string;
-  name: string;
-  /** Accent rotation this theme prefers for new objects. */
-  defaultAccentMode?: AccentMode;
-  /** Optional note shown in the picker. */
-  note?: string;
-  /**
-   * Fills whose HSL lightness had to move to reach 4.5:1 — only ever populated
-   * by "faithful" builds, where a single text colour must work on every fill.
-   */
-  adjustedFills?: { from: string; to: string }[];
-  bg: string;
-  ink: string;
-  inkMuted: string;
-  /** Title/hero block fill; `null` means "no fill, bold ink text". */
-  root: string | null;
-  rootText: string;
-  accents: AccentToken[];
-}
-
-export interface ThemeSpec {
-  id: string;
-  name: string;
-  bg: string;
-  ink: string;
-  /** Optional explicit secondary text colour. */
-  inkMuted?: string;
-  /**
-   * Text colour to consider for fills, when it differs from `ink`. A dark
-   * theme has light ink for body copy but needs dark text on pastel fills.
-   */
-  fillInk?: string;
-  root?: { fill: string; text: string } | null;
-  /** Fill colours; text and line colours are derived. */
-  fills: string[];
-  /** Accent rotation this theme prefers for new objects. */
-  defaultAccentMode?: AccentMode;
-  /** Explicit line colours, by accent index (used where the spec pins them). */
-  lineOverrides?: Record<number, string>;
-  note?: string;
-  alt?: string;
-}
-
-/**
- * Build a Theme from a spec, deriving text and line colours by rule.
- * `faithful` forces white text on every fill (lower contrast, opt-in only).
- */
-export function buildTheme(spec: ThemeSpec, opts: { forceWhiteText?: boolean } = {}): Theme {
-  const adjustedFills: { from: string; to: string }[] = [];
-
-  const accents: AccentToken[] = spec.fills.map((fill, index) => {
-    const explicitLine = spec.lineOverrides?.[index];
-
-    // "Faithful" keeps one text colour (white) on every fill and darkens the
-    // fill only as far as legibility requires; the default mode leaves fills
-    // exactly as specified and picks the better text colour for each.
-    const pair = opts.forceWhiteText
-      ? (() => {
-          const forced = whiteTextPair(fill);
-          return { fill: forced.fill, text: WHITE, deltaL: forced.deltaL };
-        })()
-      : legiblePair(fill, spec.fillInk ?? spec.ink);
-
-    if (pair.deltaL !== 0) adjustedFills.push({ from: fill, to: pair.fill });
-
-    // Lines are derived from the colour that actually ships. A pinned line is
-    // honoured, but only if it still clears 3:1 against this theme's paper —
-    // otherwise it is deepened, so a border can never disappear.
-    const pinned = explicitLine && contrastRatio(explicitLine, spec.bg) >= 3 ? explicitLine : null;
-
-    return {
-      fill: pair.fill,
-      text: pair.text,
-      line: pinned ?? lineColorFor(pair.fill, spec.bg),
-    };
-  });
-
-  const rootFill = spec.root?.fill ?? null;
-  const rootText = spec.root?.text ?? spec.ink;
-
-  return {
-    id: spec.id,
-    name: spec.name,
-    ...(spec.note ? { note: spec.note } : {}),
-    ...(adjustedFills.length ? { adjustedFills } : {}),
-    ...(spec.defaultAccentMode ? { defaultAccentMode: spec.defaultAccentMode } : {}),
-    bg: spec.bg,
-    ink: spec.ink,
-    // Muted text is a softer ink, but never below AA.
-    inkMuted: towardContrast(spec.inkMuted ?? spec.ink, spec.bg, 4.5),
-    root: rootFill,
-    rootText,
-    accents,
-  };
-}
-
-/* ------------------------------------------------------------------ */
-/* The themes                                                          */
-/* ------------------------------------------------------------------ */
-
-/** terracotta, legible mode: ink text on the light fills (the default). */
-const TERRACOTTA_LEGIBLE: ThemeSpec = {
-  id: "terracotta",
-  name: "Terracotta",
-  bg: "#FFFFFF",
-  ink: "#3D474D",
-  root: null,
-  fills: ["#BA594A", "#F79B8D", "#F1D1C3", "#87BBC4", "#5A798C", "#324758"],
-};
-
-const SPECTRUM: ThemeSpec = {
-  id: "spectrum",
-  name: "Spectrum",
-  // A near-white violet paper: distinct from white so switching palette reads
-  // as a change, but light enough for the same ink to clear 4.5:1.
-  bg: "#F8F6FE",
-  ink: "#2D3748",
-  root: { fill: "#1F2733", text: WHITE },
-  fills: ["#7B4FE0", "#D6336C", "#CD440E", "#F59F00", "#288639", "#1A76C7", "#0C7E92"],
-  // Fills whose derived line is too light get a pinned, slightly darker line.
-  lineOverrides: { 3: "#BE7416" },
-};
-
-const PASTEL: ThemeSpec = {
-  id: "pastel",
-  name: "Pastel",
-  // Warm blush paper.
-  bg: "#FDF8F4",
-  ink: "#2D3748",
-  root: { fill: "#2D3748", text: WHITE },
-  fills: ["#F4A6A0", "#F6C28B", "#F3E08A", "#B5D99C", "#9CD3D0", "#A9C4EB", "#C9B6E4"],
-  lineOverrides: ["#D2605A", "#CC8228", "#A68800", "#5E9A3A", "#3C928C", "#4A7FC4", "#8160B8"],
-};
-
-const OCEAN: ThemeSpec = {
-  id: "ocean",
-  name: "Ocean",
-  bg: "#F3F6FA",
-  ink: "#2D3748",
-  root: { fill: "#1F2733", text: WHITE },
-  fills: ["#2B6F8E", "#347D8D", "#5FB3A1", "#8CC084", "#586DCA", "#8763B0"],
-};
-
-/**
- * Four vivid fills. On `#AC84F4` dark ink (2.95) actually beats white (2.85),
- * so the derivation picks ink there and white on the other three — each fill
- * keeps its exact specified colour and still clears 4.5:1.
- */
-const VIVID_VIDEO: ThemeSpec = {
-  id: "vivid-video",
-  name: "Vivid",
-  // Cool, bright paper so the vivid fills sit on something other than white.
-  bg: "#F5F8FF",
-  ink: "#3F4245",
-  inkMuted: "#727275",
-  root: { fill: "#1F2733", text: WHITE },
-  fills: ["#487BFF", "#AC84F4", "#F96196", "#FF4818"],
-  note: "Vivid fills with a legible text colour chosen per fill.",
-};
-
-/** Dark surface with the pastel palette as accents and ink text on the fills. */
-const DARK: ThemeSpec = {
-  id: "dark",
-  name: "Dark",
-  bg: "#1F2733",
-  alt: "#141A24",
-  ink: "#E6EAF0",
-  root: { fill: "#141A24", text: "#E6EAF0" },
-  // Pastel fills with dark ink on them (the spec: "ink text on the fills"),
-  // while body copy stays light on the dark background.
-  fillInk: "#2D3748",
-  fills: ["#F4A6A0", "#F6C28B", "#F3E08A", "#B5D99C", "#9CD3D0", "#A9C4EB", "#C9B6E4"],
-};
-
-/** Every palette, in picker order. */
-export const SPECS: ThemeSpec[] = [
-  TERRACOTTA_LEGIBLE,
-  SPECTRUM,
-  PASTEL,
-  OCEAN,
-  VIVID_VIDEO,
-  DARK,
-];
-
-/**
- * Every palette in legible mode. "Faithful" is a per-deck toggle rather than a
- * theme of its own, so the same palette can be shown both ways.
- */
-export const THEMES: Theme[] = SPECS.map((spec) => buildTheme(spec));
-
-export const DEFAULT_THEME_ID = "terracotta";
-
-/** Raw spec for a theme id (used to rebuild it in faithful mode). */
-export function getSpec(id: string): ThemeSpec {
-  return SPECS.find((s) => s.id === id) ?? SPECS[0];
-}
-
-export function getThemeById(id: string | null | undefined): Theme {
-  return THEMES.find((t) => t.id === id) ?? THEMES[0];
-}
 
 /* ------------------------------------------------------------------ */
 /* Typography, shape and spacing (ratios from the source deck)          */
@@ -544,32 +332,33 @@ export interface ThemeBackground {
 }
 
 /** The background a theme supplies when the deck has not picked one. */
-export function themeDefaultBackground(theme: Theme): { from: string; to?: string; angle?: number } {
-  return { from: theme.bg };
+export function themeDefaultBackground(theme: ResolvedTheme): { from: string; to?: string; angle?: number } {
+  return { from: theme.roles.canvas };
 }
 
 /**
  * Background choices derived from a theme: its own paper, a soft wash of each
  * of its first accents, and one deeper "statement" variant for title slides.
  */
-export function themeBackgrounds(theme: Theme): ThemeBackground[] {
+export function themeBackgrounds(theme: ResolvedTheme): ThemeBackground[] {
   const accents = theme.accents.slice(0, 4);
-  const onDark = relativeLuminance(theme.bg) < 0.35;
+  const onDark = relativeLuminance(theme.roles.canvas) < 0.35;
 
   const washes = accents.map((accent, index) => ({
     id: `wash-${index + 1}`,
     name: ["Accent wash", "Second wash", "Third wash", "Fourth wash"][index] ?? `Wash ${index + 1}`,
     // Mixing toward the background keeps it light; toward the fill keeps it
     // saturated. 14% is enough to read as a colour, not a stain.
-    from: onDark ? mix(theme.bg, accent.fill, 0.82) : mix(accent.fill, theme.bg, 0.14),
-    themeId: theme.id,
+    from: onDark ? mix(theme.roles.canvas, accent.fill, 0.82) : mix(accent.fill, theme.roles.canvas, 0.14),
+    themeId: theme.mood ?? theme.appearance ?? "default",
   }));
 
-  const gradientFrom = onDark ? mix(theme.bg, accents[0]?.fill ?? theme.ink, 0.9) : theme.bg;
-  const gradientTo = mix(accents[0]?.fill ?? theme.ink, theme.bg, onDark ? 0.45 : 0.3);
+  const ink = theme.roles.text;
+  const gradientFrom = onDark ? mix(theme.roles.canvas, accents[0]?.fill ?? ink, 0.9) : theme.roles.canvas;
+  const gradientTo = mix(accents[0]?.fill ?? ink, theme.roles.canvas, onDark ? 0.45 : 0.3);
 
   return [
-    { id: "paper", name: "Theme paper", from: theme.bg, themeId: theme.id },
+    { id: "paper", name: "Theme paper", from: theme.roles.canvas, themeId: theme.mood ?? theme.appearance ?? "default" },
     ...washes,
     {
       id: "gradient",
@@ -577,20 +366,20 @@ export function themeBackgrounds(theme: Theme): ThemeBackground[] {
       from: gradientFrom,
       to: gradientTo,
       angle: 135,
-      themeId: theme.id,
+      themeId: theme.mood ?? theme.appearance ?? "default",
     },
     {
       id: "statement",
       name: "Statement",
-      from: theme.root ?? theme.ink,
+      from: theme.tokens.root,
       angle: 160,
-      themeId: theme.id,
+      themeId: theme.mood ?? theme.appearance ?? "default",
     },
   ];
 }
 
 /** Resolve a stored background id against a theme (falls back to its paper). */
-export function resolveBackground(theme: Theme, id?: string | null): { from: string; to?: string; angle?: number } {
+export function resolveBackground(theme: ResolvedTheme, id?: string | null): { from: string; to?: string; angle?: number } {
   if (!id) return themeDefaultBackground(theme);
 
   const fixed = BACKGROUNDS.find((b) => b.id === id);
@@ -604,229 +393,3 @@ export function resolveBackground(theme: Theme, id?: string | null): { from: str
   return /^#[0-9a-fA-F]{6}$/.test(id) ? { from: id } : themeDefaultBackground(theme);
 }
 
-/* ------------------------------------------------------------------ */
-/* CSS generation                                                      */
-/* ------------------------------------------------------------------ */
-
-function accentVars(accents: AccentToken[]): string[] {
-  const out: string[] = [];
-  accents.forEach((accent, index) => {
-    const n = index + 1;
-    out.push(`  --accent-${n}: ${accent.fill};`);
-    out.push(`  --accent-${n}-text: ${accent.text};`);
-    out.push(`  --accent-${n}-line: ${accent.line};`);
-  });
-  out.push(`  --accent-count: ${accents.length};`);
-  return out;
-}
-
-/** The `[data-theme="…"] { … }` block for one theme. */
-export function themeToCssBlock(theme: Theme): string {
-  return [
-    `[data-theme="${theme.id}"] {`,
-    `  --bg: ${theme.bg};`,
-    `  --ink: ${theme.ink};`,
-    `  --ink-muted: ${theme.inkMuted};`,
-    `  --root: ${theme.root ?? "transparent"};`,
-    `  --root-text: ${theme.rootText};`,
-    `  --select: ${SELECT_COLOR};`,
-    ...accentVars(theme.accents),
-    `}`,
-  ].join("\n");
-}
-
-/** Whole stylesheet: tokens, typography, shape, and one block per theme. */
-export function themesToCss(): string {
-  const header = `/* GENERATED FILE - do not edit by hand.
-   Source: src/lib/theming/themes.ts  |  Regenerate: npm run themes:css */
-
-:root {
-  --font-sans: var(--font-inter), Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-
-  /* Type scale for the 1280x720 canvas; nothing below --type-min. */
-  --type-title: ${TYPE_SCALE.title}px;
-  --type-section: ${TYPE_SCALE.section}px;
-  --type-body: ${TYPE_SCALE.body}px;
-  --type-min: ${TYPE_SCALE.min}px;
-
-  --radius: ${SHAPE.radiusEm}em;
-  --line-width: ${Math.max(SHAPE.minLinePx, Math.round(TYPE_SCALE.body * SHAPE.lineEm))}px;
-  --marker-size: ${SHAPE.markerEm}em;
-  --select-width: ${SHAPE.selectRingPx}px;
-  --select-gap: ${SHAPE.selectGapPx}px;
-}`;
-
-  return [header, ...THEMES.map(themeToCssBlock)].join("\n\n") + "\n";
-}
-
-/* ------------------------------------------------------------------ */
-/* Resolving a deck's theme                                            */
-/* ------------------------------------------------------------------ */
-
-export interface ResolvedTheme extends Theme {
-  /** True when the deck asked for faithful mode. */
-  faithful: boolean;
-  /** The slide surface: the chosen background resolved to colours. */
-  surface: { from: string; to?: string; angle?: number };
-  /** Chosen accent rotation for new objects. */
-  accentMode: AccentMode;
-  /** Background override, if the deck picked one. */
-  backgroundOverride: string | null;
-}
-
-/**
- * Resolve a stored preference into concrete tokens.
- *
- * `faithful` puts one text colour (white) on every fill, which is what makes a
- * source deck look the way it does. Light fills cannot carry white at 4.5:1, so
- * each is deepened by the minimum needed — the swap never drops below legible.
- */
-export function resolveDeckTheme(pref?: {
-  themeId?: string | null;
-  faithful?: boolean;
-  background?: string | null;
-  accentMode?: AccentMode;
-}): ResolvedTheme {
-  // "Faithful" means one text colour on every fill, derived from whichever
-  // palette is selected. It is a mode, not a property of one theme, so any
-  // palette can be faithful — each fill is adjusted to stay at 4.5:1.
-  const base = getThemeById(pref?.themeId);
-  const faithful = Boolean(pref?.faithful);
-  const theme = faithful ? buildTheme(getSpec(base.id), { forceWhiteText: true }) : base;
-  // `background` is an id ("paper", "wash-2", "gradient") or a raw hex. It
-  // resolves through `resolveBackground`; it is NOT the theme's paper, and must
-  // never be assigned to `bg` (that turned a palette into "Not a hex colour").
-  const backgroundOverride = pref?.background ?? null;
-
-  return {
-    ...theme,
-    faithful,
-    accentMode: pref?.accentMode ?? base.defaultAccentMode ?? "single",
-    backgroundOverride,
-    surface: resolveBackground(theme, backgroundOverride),
-  };
-}
-
-/**
- * Dominant colours for the picker's swatch dots: background first, then the
- * first three accents.
- */
-export function swatchFor(theme: Theme): string[] {
-  return [theme.bg, ...theme.accents.slice(0, 3).map((a) => a.fill)];
-}
-
-/** Accent for the nth object, honouring the deck's rotation. */
-export function accentFor(theme: Theme, index: number, mode: AccentMode): AccentToken {
-  const accents = theme.accents;
-  const n = accents.length;
-  if (mode === "rainbow") return accents[index % n];
-  if (mode === "alternate") {
-    // Two-colour alternation: the root accent, then the second.
-    return accents[index % Math.min(2, n)];
-  }
-  return accents[0];
-}
-
-/* ------------------------------------------------------------------ */
-/* Custom themes                                                       */
-/* ------------------------------------------------------------------ */
-
-/**
- * A theme someone made from a seed colour, stored on the deck.
- *
- * Deliberately small: a seed, a background and a mood. Everything else is
- * derived by the same rules as the built-ins, so a custom theme cannot be
- * illegible — there is no way to express an unreadable pairing.
- */
-export interface CustomThemeSpec {
-  /** The colour they picked: drives every accent. */
-  seed: string;
-  /** Slide background. Defaults to white. */
-  bg?: string;
-  /** "legible" picks the best text colour per fill; "faithful" forces one. */
-  mode?: "legible" | "faithful";
-}
-
-/** How far apart generated accents sit on the colour wheel, in degrees. */
-const ACCENT_ROTATIONS = [0, 32, -28, 68, -64, 148];
-
-/**
- * Derive a full palette from one seed colour.
- *
- * Accents are rotations of the seed's hue (keeping its saturation and
- * lightness character), and each one is then pushed to a legible pairing by
- * `buildTheme` — so the generated theme is readable by construction.
- */
-export function customToTheme(custom: CustomThemeSpec, name = "Custom"): Theme {
-  const seed = parseHex(custom.seed);
-  const hsl = rgbToHsl(seed);
-  const bg = custom.bg ?? "#FFFFFF";
-
-  // Body ink: a deeply darkened seed would be muddy, so follow the background's
-  // luminance and keep a little of the seed's hue for coherence.
-  const ink = toHex(
-    hslToRgb({
-      h: hsl.h,
-      s: Math.min(14, hsl.s * 0.25),
-      l: relativeLuminance(bg) > 0.5 ? 17 : 93,
-    })
-  );
-
-  const fills = ACCENT_ROTATIONS.map((delta, index) =>
-    toHex(
-      hslToRgb({
-        h: hsl.h + delta,
-        // Later accents drift lighter/darker so a rainbow of fills reads as a
-        // set rather than six copies of one colour.
-        s: Math.min(88, Math.max(38, hsl.s)),
-        l: Math.min(74, Math.max(30, hsl.l + (index % 3 === 1 ? 8 : index % 3 === 2 ? -6 : 0))),
-      })
-    )
-  );
-
-  return buildTheme(
-    {
-      id: "custom",
-      name,
-      bg,
-      ink,
-      root: { fill: ink, text: WHITE },
-      fills,
-      note: `Built from ${custom.seed}.`,
-    },
-    { forceWhiteText: custom.mode === "faithful" }
-  );
-}
-
-/**
- * The theme a deck actually renders with: a built-in palette by id, or a
- * custom one derived from the deck's own seed colour.
- */
-export function resolveTheme(pref?: {
-  themeId?: string | null;
-  custom?: CustomThemeSpec | null;
-  faithful?: boolean;
-  background?: string | null;
-  accentMode?: AccentMode;
-}): ResolvedTheme {
-  const custom = pref?.custom ?? null;
-  if (custom) {
-    const theme = customToTheme({
-      ...custom,
-      mode: pref?.faithful ? "faithful" : (custom.mode ?? "legible"),
-    });
-    return {
-      ...theme,
-      faithful: Boolean(pref?.faithful),
-      accentMode: pref?.accentMode ?? theme.defaultAccentMode ?? "single",
-      backgroundOverride: pref?.background ?? null,
-      surface: resolveBackground(theme, pref?.background),
-    };
-  }
-  return resolveDeckTheme(pref);
-}
-
-/** A short, readable swatch list for a custom theme, for the picker. */
-export function customSwatch(custom: CustomThemeSpec): string[] {
-  return swatchFor(customToTheme(custom));
-}

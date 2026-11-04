@@ -160,7 +160,8 @@ describe("brand kit", () => {
     // token: the type scale is exposed as variables on the frame either way.
     expect(html).toContain(`--slide-type-display:${defaultTheme.type.display}px`);
     // Both vocabularies are emitted: canonical tokens and the --slide-* names.
-    expect(html).toContain("--ink:");
+    expect(html).toContain("--role-text:");
+    expect(html).toContain("--slide-ink:");
     expect(html).toContain("--accent-1:");
     expect(html).toContain("var(--slide-type-h3)");
     expect(html).toContain("var(--slide-ink-muted)");

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/session";
 import { parseScript } from "@/lib/deck/script/parse";
 import { buildDeck, DEFAULT_WORDS_PER_MINUTE } from "@/lib/deck/script-to-slides";
+import { themePrefSchema } from "@/lib/theming/pref";
 import { defaultTheme } from "@/lib/deck/theme";
 import { insertDeck } from "@/lib/deck/store";
 
@@ -17,6 +18,12 @@ const createSchema = z.object({
   script: z.string().min(1).max(200_000),
   fileName: z.string().max(200).optional(),
   wordsPerMinute: z.number().int().min(60).max(400).optional(),
+  /**
+   * Optional theme preference supplied by the import dialog. Validated with the
+   * same schema the editor uses, so a Markdown deck is themed through exactly
+   * one path — never a Markdown-only colour system with its own hexes.
+   */
+  theme: themePrefSchema.optional(),
 });
 
 export async function POST(req: Request) {
@@ -49,6 +56,7 @@ export async function POST(req: Request) {
   const deck = buildDeck(result.doc, defaultTheme, {
     wordsPerMinute: parsed.data.wordsPerMinute ?? DEFAULT_WORDS_PER_MINUTE,
     ...(parsed.data.fileName ? { fileName: parsed.data.fileName } : {}),
+    themePref: parsed.data.theme ?? null,
   });
 
   try {

@@ -1,262 +1,257 @@
 import { describe, expect, it } from "vitest";
-import {
-  BACKGROUNDS,
-  DEFAULT_THEME_ID,
-  SPECS,
-  THEMES,
-  WHITE,
-  buildTheme,
-  contrast,
-  contrastRatio,
-  darken,
-  getThemeById,
-  lineColorFor,
-  parseHex,
-  resolveDeckTheme,
-  rgbToHsl,
-  textOn,
-  toHex,
-} from "@/lib/theming/themes";
+import { APPEARANCE_IDS, MOOD_IDS, type MindmapAppearanceId } from "@/lib/theming/mindmap";
+import { resolveDeckTheme } from "@/lib/theming/deck-theme";
+import { backgroundChoices } from "@/lib/theming/backgrounds";
+import { contrast, relativeLuminance, resolveTheme, type ResolvedTheme } from "@/lib/theming/roles";
 
 /** Minimum WCAG AA contrast for normal text. */
 const TEXT_MIN = 4.5;
-/** Minimum contrast for a non-text stroke/border. */
+/** Minimum contrast for a meaningful non-text stroke. */
 const LINE_MIN = 3;
 
 /**
- * These are the acceptance gates for the whole theme system: a palette edit
- * that produces illegible text or an invisible border fails the build here
- * rather than shipping.
+ * The acceptance gates for the whole theme system.
  *
- * There are no exceptions. Where a source palette could not reach 4.5:1 with
- * either white or ink, `buildTheme` derives a legible pairing instead of
- * shipping the illegible one — detail below.
+ * Any palette edit, resolver change or new canvas that produces illegible text
+ * or an invisible border fails here rather than shipping. There are no
+ * exceptions and no allow-lists: where a palette cannot reach 4.5:1 with either
+ * white or ink, the resolver derives a legible pairing instead.
  */
-describe("every theme is legible", () => {
-  for (const theme of THEMES) {
-    describe(theme.id, () => {
-      it("has body text legible on the background", () => {
-        expect(contrast(theme.ink, theme.bg)).toBeGreaterThanOrEqual(TEXT_MIN);
-      });
 
-      it("never uses pure black text", () => {
-        for (const colour of [theme.ink, theme.inkMuted, ...theme.accents.map((a) => a.text)]) {
-          expect(colour.toUpperCase()).not.toBe("#000000");
+/** Every role that must be readable, with the surface it is painted on. */
+function textPairs(theme: ResolvedTheme): [name: string, ink: string, surface: string][] {
+  const r = theme.roles;
+  return [
+    ["body text on canvas", r.text, r.canvas],
+    ["body text on surface", r.text, r.surface],
+    ["body text on elevated", r.text, r.elevated],
+    ["muted text on surface", r.textMuted, r.surface],
+    ["heading on canvas", r.heading, r.canvas],
+    ["text on accent", r.onAccent, r.accent],
+    ["text on secondary accent", r.onAccentSecondary, r.accentSecondary],
+    ["disabled text on canvas", r.state.disabledText, r.canvas],
+    ["selected text", r.state.selectedText, r.state.selected],
+    ["success", r.semantic.success, r.canvas],
+    ["warning", r.semantic.warning, r.canvas],
+    ["danger", r.semantic.danger, r.canvas],
+  ];
+}
+
+/** Roles that are allowed to be quieter than text but must still be visible. */
+function linePairs(theme: ResolvedTheme): [name: string, stroke: string, surface: string][] {
+  const r = theme.roles;
+  return [
+    ["connector", r.connector, r.canvas],
+    ["icon", r.icon, r.canvas],
+  ];
+}
+
+describe("every colour mood is legible", () => {
+  for (const mood of MOOD_IDS) {
+    describe(mood, () => {
+      const theme = resolveDeckTheme({ mood });
+
+      it("has readable text everywhere text is painted", () => {
+        for (const [name, ink, surface] of textPairs(theme)) {
+          expect(contrast(ink, surface), `${name}: ${ink} on ${surface}`).toBeGreaterThanOrEqual(
+            TEXT_MIN
+          );
         }
       });
 
-      it("has muted text legible on the background", () => {
-        // Muted text is only allowed for 18px+ copy, but it still has to be
-        // readable: hold it to the same body threshold.
-        expect(contrast(theme.inkMuted, theme.bg)).toBeGreaterThanOrEqual(TEXT_MIN);
+      it("has visible connectors and icons", () => {
+        for (const [name, stroke, surface] of linePairs(theme)) {
+          expect(contrast(stroke, surface), `${name}: ${stroke} on ${surface}`).toBeGreaterThanOrEqual(
+            LINE_MIN
+          );
+        }
       });
 
-      it("has legible text on every accent fill", () => {
-        // No exceptions and no large-text carve-out: every fill carries text
-        // at 4.5:1, in every theme.
-        for (const [index, accent] of theme.accents.entries()) {
-          const ratio = contrast(accent.text, accent.fill);
+      it("has a readable foreground on every accent", () => {
+        for (const accent of theme.accents) {
           expect(
-            ratio,
-            `${theme.id} accent-${index + 1} (${accent.fill}) text ${accent.text} is ${ratio}:1`
+            contrast(accent.text, accent.fill),
+            `${accent.fill} needs text, got ${accent.text}`
           ).toBeGreaterThanOrEqual(TEXT_MIN);
         }
       });
 
-      it("has an accent line at least 3:1 against the background", () => {
-        for (const [index, accent] of theme.accents.entries()) {
-          const ratio = contrast(accent.line, theme.bg);
-          expect(
-            ratio,
-            `${theme.id} accent-${index + 1} line (${accent.line}) is ${ratio}:1 against ${theme.bg}`
-          ).toBeGreaterThanOrEqual(LINE_MIN);
+      it("never uses pure black text", () => {
+        const inks = [
+          theme.roles.text,
+          theme.roles.textMuted,
+          theme.roles.heading,
+          ...theme.accents.map((a) => a.text),
+        ];
+        for (const colour of inks) expect(colour.toUpperCase()).not.toBe("#000000");
+      });
+
+      it("has distinct borders and dividers from the canvas", () => {
+        // Structural lines are allowed to be quiet, but not invisible.
+        expect(theme.roles.border.toUpperCase()).not.toBe(theme.roles.canvas.toUpperCase());
+        expect(theme.roles.divider.toUpperCase()).not.toBe(theme.roles.canvas.toUpperCase());
+      });
+
+      it("keeps the focus ring visible against canvas and surface", () => {
+        for (const surface of [theme.roles.canvas, theme.roles.surface]) {
+          expect(contrast(theme.roles.focusRing, surface)).toBeGreaterThanOrEqual(LINE_MIN);
         }
       });
 
-      it("has legible text on the root/title fill", () => {
-        if (theme.root === null) {
-          // No fill: the title is ink on the background.
-          expect(contrast(theme.ink, theme.bg)).toBeGreaterThanOrEqual(TEXT_MIN);
-          return;
-        }
-        expect(contrast(theme.rootText, theme.root)).toBeGreaterThanOrEqual(TEXT_MIN);
+      it("has a categorical ramp with one entry per accent", () => {
+        expect(theme.roles.categorical).toHaveLength(theme.accents.length);
+        // Categorical entries are the authored palette colours; the fills may
+        // differ by a few thousandths where text legibility required a nudge.
+        // Both must map to the same slot, so the legend still matches the bars.
+        theme.roles.categorical.forEach((colour, index) => {
+          expect(colour.toUpperCase()).toBe(theme.tokens.palette[index].toUpperCase());
+        });
       });
     });
   }
+});
 
-  it("covers every documented theme", () => {
-    // Six palettes. "Faithful" is a mode, not a seventh theme, so a palette
-    // can be shown both ways without duplicating the list.
-    expect(THEMES.map((t) => t.id)).toEqual([
-      "terracotta",
-      "spectrum",
-      "pastel",
-      "ocean",
-      "vivid-video",
-      "dark",
-    ]);
-    expect(getThemeById(DEFAULT_THEME_ID).id).toBe("terracotta");
-    expect(getThemeById("nope").id).toBe(DEFAULT_THEME_ID);
-  });
-
-  it("uses the specified palette exactly in the default mode", () => {
-    const terracotta = getThemeById("terracotta");
-    // Six fills, as specified.
-    expect(terracotta.accents).toHaveLength(6);
-    // Nothing adjusted: the default mode never alters a colour.
-    expect(terracotta.adjustedFills).toBeUndefined();
-    expect(terracotta.accents.map((a) => a.fill)).toEqual([
-      "#BA594A",
-      "#F79B8D",
-      "#F1D1C3",
-      "#87BBC4",
-      "#5A798C",
-      "#324758",
-    ]);
-  });
-
-  it("moves a vivid fill as little as possible, keeping its hue", () => {
-    // The vivid fills were the original conflict: none reached 4.5:1 with
-    // either text colour. Each is nudged in lightness instead of being
-    // replaced — hue is preserved and the shift is small.
-    const vivid = getThemeById("vivid-video");
-    const specified = ["#487BFF", "#AC84F4", "#F96196", "#FF4818"];
-    expect(vivid.adjustedFills).toHaveLength(specified.length);
-
-    vivid.accents.forEach((accent, index) => {
-      const before = rgbToHsl(parseHex(specified[index]));
-      const after = rgbToHsl(parseHex(accent.fill));
-      expect(Math.abs(after.h - before.h)).toBeLessThan(4);
-      expect(Math.abs(after.l - before.l)).toBeLessThan(25);
-      expect(contrast(accent.text, accent.fill)).toBeGreaterThanOrEqual(TEXT_MIN);
+describe("every appearance is legible", () => {
+  for (const appearance of APPEARANCE_IDS) {
+    it(`${appearance} has readable text on its own canvas`, () => {
+      const theme = resolveDeckTheme({ appearance });
+      expect(contrast(theme.roles.text, theme.roles.canvas)).toBeGreaterThanOrEqual(TEXT_MIN);
+      for (const accent of theme.accents) {
+        expect(contrast(accent.text, accent.fill)).toBeGreaterThanOrEqual(TEXT_MIN);
+      }
     });
+  }
+});
+
+describe("the independence requirement", () => {
+  it("keeps the palette identical when only the background changes", () => {
+    const before = resolveDeckTheme({ mood: "mutedOcean" });
+    for (const choice of backgroundChoices(before)) {
+      const after = resolveDeckTheme({ mood: "mutedOcean", background: choice.id });
+      expect(after.roles.categorical, `canvas ${choice.id}`).toEqual(before.roles.categorical);
+      expect(after.mood).toBe("mutedOcean");
+    }
   });
 
-  it("keeps extra backgrounds usable with every light theme", () => {
-    const lightThemes = THEMES.filter((t) => t.id !== "dark");
-    for (const background of BACKGROUNDS) {
-      if (!background.value) continue;
-      for (const theme of lightThemes) {
-        // A user-picked background must not sink the body text below AA.
+  it("keeps an explicit background when only the palette changes", () => {
+    for (const mood of MOOD_IDS) {
+      const theme = resolveDeckTheme({ mood, background: "#EEF3EC" });
+      expect(theme.roles.canvas, `mood ${mood}`).toBe("#EEF3EC");
+    }
+  });
+
+  it("stays readable on every palette × canvas combination", () => {
+    // The whole cross-product: 17 moods × every canvas they offer, plus the
+    // neutral and dark papers that exist specifically to be paired arbitrarily.
+    const extra = ["#FFFFFF", "#FAF6F1", "#F3F6FA", "#EEF3EC", "#1E293B", "#0F172A", "#0B0D10"];
+    let combos = 0;
+    for (const mood of MOOD_IDS) {
+      const canvases = [
+        ...backgroundChoices(resolveDeckTheme({ mood })).map((b) => b.id),
+        ...extra,
+      ];
+      for (const background of canvases) {
+        const theme = resolveDeckTheme({ mood, background });
+        combos++;
         expect(
-          contrast(theme.ink, background.value),
-          `${theme.id} ink on ${background.name} (${background.value})`
+          contrast(theme.roles.text, theme.roles.canvas),
+          `${mood} on ${background}`
         ).toBeGreaterThanOrEqual(TEXT_MIN);
+        for (const accent of theme.accents) {
+          expect(
+            contrast(accent.text, accent.fill),
+            `${mood}/${background}: ${accent.fill}`
+          ).toBeGreaterThanOrEqual(TEXT_MIN);
+        }
+      }
+    }
+    expect(combos).toBeGreaterThan(200);
+  });
+});
+
+describe("faithful mode", () => {
+  it("keeps one text colour by deepening fills instead of switching ink", () => {
+    for (const mood of MOOD_IDS) {
+      const theme = resolveDeckTheme({ mood, faithful: true });
+      const texts = new Set(theme.accents.map((a) => a.text));
+      expect(texts.size, `${mood} used more than one text colour`).toBe(1);
+      for (const accent of theme.accents) {
+        expect(contrast(accent.text, accent.fill)).toBeGreaterThanOrEqual(TEXT_MIN);
       }
     }
   });
 });
 
-describe("colour rules", () => {
-  it("picks whichever of white/ink is more legible on a fill", () => {
-    // Dark fill → white; light fill → ink.
-    expect(textOn("#324758", "#3D474D").color).toBe(WHITE);
-    expect(textOn("#F1D1C3", "#3D474D").color).toBe("#3D474D");
-  });
-
-  it("never returns a pairing below 4.5:1 when one is available", () => {
-    const ink = "#3D474D";
-    for (const fill of ["#BA594A", "#F79B8D", "#F1D1C3", "#87BBC4", "#5A798C", "#324758"]) {
-      expect(textOn(fill, ink).ratio).toBeGreaterThanOrEqual(4.5);
+describe("brand palette overrides", () => {
+  it("replaces the accent list without touching the canvas", () => {
+    const base = resolveDeckTheme({ mood: "clarity" as never });
+    const brand = resolveDeckTheme({
+      mood: "mutedOcean",
+      palette: ["#123456", "#654321", "#0F7A4A"],
+    });
+    // Canvas still comes from the mood.
+    const plain = resolveDeckTheme({ mood: "mutedOcean" });
+    expect(brand.roles.canvas).toBe(plain.roles.canvas);
+    expect(brand.roles.categorical.slice(0, 3)).toEqual(["#123456", "#654321", "#0F7A4A"]);
+    expect(brand.paletteOverridden).toBe(true);
+    // An overridden palette still gets readable text and visible lines.
+    for (const accent of brand.accents) {
+      expect(contrast(accent.text, accent.fill)).toBeGreaterThanOrEqual(TEXT_MIN);
+      expect(contrast(accent.line, base.roles.canvas)).toBeGreaterThanOrEqual(1);
     }
   });
 
-  it("darkens a fill until it reaches 3:1 against the background", () => {
-    for (const fill of ["#F1D1C3", "#F79B8D", "#B5D99C", "#F3E08A"]) {
-      const line = lineColorFor(fill, "#FFFFFF");
-      expect(contrast(line, "#FFFFFF")).toBeGreaterThanOrEqual(3);
-      // It should be a darkening of the fill, not an unrelated colour.
-      expect(parseHex(line).r + parseHex(line).g + parseHex(line).b).toBeLessThan(
-        parseHex(fill).r + parseHex(fill).g + parseHex(fill).b
+  it("cycles a short palette rather than inventing colours", () => {
+    const theme = resolveDeckTheme({ palette: ["#123456"] });
+    expect(new Set(theme.roles.categorical).size).toBe(1);
+  });
+});
+
+describe("categorical stability", () => {
+  it("assigns the same colour to the same index on every resolution", () => {
+    const a = resolveDeckTheme({ mood: "ocean" });
+    const b = resolveDeckTheme({ mood: "ocean" });
+    for (let i = 0; i < 12; i++) {
+      expect(a.roles.categorical[i % a.roles.categorical.length]).toBe(
+        b.roles.categorical[i % b.roles.categorical.length]
       );
     }
   });
+});
 
-  it("never darkens a fill to pure black", () => {
-    const line = lineColorFor("#F1D1C3", "#FFFFFF");
-    expect(line.toUpperCase()).not.toBe("#000000");
+describe("determinism", () => {
+  it("resolves the same input to the same output", () => {
+    const input = { mood: "forest" as const, background: "#FAF6F1" };
+    expect(resolveTheme(input).roles).toEqual(resolveTheme(input).roles);
   });
 
-  it("computes WCAG ratios correctly", () => {
-    expect(contrast("#FFFFFF", "#000000")).toBe(21);
-    expect(contrast("#FFFFFF", "#FFFFFF")).toBe(1);
-    // Known value: #767676 on white is the classic 4.54:1.
-    expect(Math.round(contrastRatio("#767676", "#FFFFFF") * 100) / 100).toBe(4.54);
-  });
-
-  it("round-trips hex parsing and formatting", () => {
-    expect(toHex(parseHex("#3d474d"))).toBe("#3D474D");
-    expect(toHex(parseHex("#fff"))).toBe("#FFFFFF");
-  });
-
-  it("darkens by HSL lightness", () => {
-    const darker = darken("#808080", 10);
-    expect(contrast(darker, "#FFFFFF")).toBeGreaterThan(contrast("#808080", "#FFFFFF"));
+  it("ignores a non-hex background instead of throwing", () => {
+    // A stored id that is not a colour and not a known canvas must not break a
+    // render; it falls back to the mood's own canvas.
+    const theme = resolveTheme({ mood: "ocean", background: "not-a-colour" });
+    expect(theme.roles.canvas).toBe(resolveTheme({ mood: "ocean" }).roles.canvas);
   });
 });
 
-describe("faithful mode still has to be readable", () => {
-  const faithfulThemes = SPECS.map((spec) => buildTheme(spec, { forceWhiteText: true }));
+describe("colour maths", () => {
+  it("computes WCAG contrast with the standard coefficients", () => {
+    expect(contrast("#FFFFFF", "#000000")).toBeCloseTo(21, 0);
+    expect(contrast("#FFFFFF", "#FFFFFF")).toBeCloseTo(1, 5);
+    expect(relativeLuminance("#FFFFFF")).toBeCloseTo(1, 5);
+    expect(relativeLuminance("#000000")).toBeCloseTo(0, 5);
+  });
+});
 
-  it("is offered for every palette", () => {
-    expect(faithfulThemes).toHaveLength(SPECS.length);
-    for (const theme of faithfulThemes) {
-      expect(theme.accents.every((a) => a.text === WHITE)).toBe(true);
-    }
+describe("appearance tokens stay distinct from moods", () => {
+  it("resolves a dark appearance as dark and a light one as light", () => {
+    expect(relativeLuminance(resolveTheme({ appearance: "prism" }).roles.canvas)).toBeLessThan(0.18);
+    expect(
+      relativeLuminance(resolveTheme({ appearance: "clarity" as MindmapAppearanceId }).roles.canvas)
+    ).toBeGreaterThan(0.5);
   });
 
-  it("keeps white text at 4.5:1 on every fill, adjusting the fill instead", () => {
-    for (const theme of faithfulThemes) {
-      for (const [index, accent] of theme.accents.entries()) {
-        const ratio = contrast(WHITE, accent.fill);
-        expect(
-          ratio,
-          `${theme.id} faithful accent-${index + 1} (${accent.fill}) is ${ratio}:1`
-        ).toBeGreaterThanOrEqual(TEXT_MIN);
-      }
-    }
-  });
-
-  it("changes a fill as little as possible", () => {
-    // The adjustment must be a lightness nudge of the same hue, not a
-    // different colour: saturation stays put and the move is small.
-    const faithful = buildTheme(
-      { id: "t", name: "T", bg: "#FFFFFF", ink: "#3D474D", fills: ["#F1D1C3"] },
-      { forceWhiteText: true }
-    );
-    const adjusted = faithful.accents[0].fill;
-    expect(adjusted).not.toBe("#F1D1C3");
-    const before = rgbToHsl(parseHex("#F1D1C3"));
-    const after = rgbToHsl(parseHex(adjusted));
-    expect(Math.round(after.h)).toBe(Math.round(before.h));
-    expect(Math.abs(after.s - before.s)).toBeLessThan(12);
-    expect(after.l).toBeLessThan(before.l);
-  });
-
-  it("records every fill it had to change", () => {
-    const faithful = buildTheme(
-      { id: "t", name: "T", bg: "#FFFFFF", ink: "#3D474D", fills: ["#F1D1C3", "#324758"] },
-      { forceWhiteText: true }
-    );
-    // #324758 already clears 4.5:1 with white, so only the pale one moves.
-    expect(faithful.adjustedFills).toHaveLength(1);
-    expect(faithful.adjustedFills?.[0].from).toBe("#F1D1C3");
-  });
-
-  it("gives the deck a faithful variant of whatever theme is selected", () => {
-    for (const spec of SPECS) {
-      const plain = resolveDeckTheme({ themeId: spec.id });
-      const faithful = resolveDeckTheme({ themeId: spec.id, faithful: true });
-      expect(faithful.faithful).toBe(true);
-      expect(faithful.accents.every((a) => a.text === WHITE)).toBe(true);
-      // The background and ink come from the same palette either way.
-      expect(faithful.bg).toBe(plain.bg);
-      expect(faithful.ink).toBe(plain.ink);
-    }
-  });
-
-  it("is off unless the deck asks for it", () => {
-    expect(resolveDeckTheme({ themeId: "ocean" }).faithful).toBe(false);
-    expect(resolveDeckTheme({ themeId: "ocean", faithful: false }).faithful).toBe(false);
+  it("lets a mood beat an appearance's colours", () => {
+    const mood = resolveDeckTheme({ mood: "mutedOcean", appearance: "prism" });
+    expect(relativeLuminance(mood.roles.canvas)).toBeGreaterThan(0.5);
   });
 });

@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { scriptDecks } from "@/lib/db/schema";
 import { deckEstMinutes, deckWordCount, type Deck } from "./slide-types";
+import type { DeckTheme } from "@/lib/types";
 
 /**
  * Server-side persistence for script-generated decks (table: `script_decks`).
@@ -101,7 +102,7 @@ export async function renameDeck(ownerId: string, deckId: string, title: string)
 export async function updateDeckTheme(
   ownerId: string,
   deckId: string,
-  theme: Deck["theme"]
+  theme: DeckTheme
 ): Promise<boolean> {
   if (!isDeckId(deckId)) return false;
   const current = await getDeck(ownerId, deckId);

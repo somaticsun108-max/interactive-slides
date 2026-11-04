@@ -16,7 +16,7 @@ import { dirname, resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { parseScript } from "@/lib/deck/script/parse";
 import { scriptToSlides } from "@/lib/deck/script-to-slides";
-import { defaultTheme, SLIDE_H, SLIDE_W, themeToCssVars } from "@/lib/deck/theme";
+import { defaultTheme, SLIDE_H, SLIDE_W, themeToCssVarsFor } from "@/lib/deck/theme";
 import SlideRenderer from "@/components/slides/SlideRenderer";
 
 // tsx compiles JSX with the classic transform; the components expect a global.
@@ -55,7 +55,7 @@ function escapeHtml(value: string): string {
 }
 
 const fontData = readFileSync(resolve("src/app/fonts/inter-latin.woff2")).toString("base64");
-const vars = Object.entries(themeToCssVars(defaultTheme))
+const vars = Object.entries(themeToCssVarsFor(defaultTheme))
   .map(([key, value]) => `${key}:${value}`)
   .join(";");
 

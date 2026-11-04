@@ -136,8 +136,26 @@ export const useDeck = create<DeckStore>()((set, get) => {
 
         setTitle: (title) => apply((deck) => ({ ...deck, title })),
 
-        setTheme: (patch) =>
-          apply((deck) => ({ ...deck, theme: { ...(deck.theme ?? { themeId: "terracotta" }), ...patch } })),
+        setTheme: (patch) => {
+          // A colour choice clears any previous source of colour, so the deck
+          // never carries two contradictory ones (e.g. a legacy `themeId` AND a
+          // mood). Background and palette overrides survive: they are separate
+          // controls, and changing the palette must not reset the canvas.
+          const cleared: Partial<DeckTheme> = {};
+          if ("mood" in patch) {
+            cleared.themeId = undefined;
+            if (patch.mood) cleared.custom = null;
+          }
+          if (patch.custom) {
+            cleared.mood = null;
+            cleared.themeId = undefined;
+          }
+          if ("appearance" in patch) cleared.themeId = undefined;
+          return apply((deck) => ({
+            ...deck,
+            theme: { ...(deck.theme ?? {}), ...patch, ...cleared },
+          }));
+        },
 
         replaceDeck: (deck) =>
           set({

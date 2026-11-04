@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { SLIDE_H, SLIDE_W, themeToCssVars, type Theme } from "@/lib/deck/theme";
+import { SLIDE_H, SLIDE_W, themeToCssVarsFor, type Theme } from "@/lib/deck/theme";
 import type { Slide } from "@/lib/deck/slide-types";
 import { cn } from "@/lib/cn";
 
@@ -36,7 +36,7 @@ export function SlideFrame({
           width: SLIDE_W,
           height: SLIDE_H,
           transform: `scale(${scale})`,
-          ...themeToCssVars(theme),
+          ...themeToCssVarsFor(theme),
           fontFamily: "var(--slide-font-sans)",
           color: "var(--slide-ink)",
           background: "var(--slide-paper)",

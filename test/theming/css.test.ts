@@ -1,34 +1,62 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { BACKGROUNDS, SELECT_COLOR, SHAPE, THEMES, themesToCss } from "@/lib/theming/themes";
+import { APPEARANCE_IDS, MOOD_IDS } from "@/lib/theming/mindmap";
+import { SHAPE, TYPE_SCALE } from "@/lib/theming/themes";
+import { resolveDeckTheme, themeToCssVars } from "@/lib/theming/deck-theme";
 
 const css = readFileSync(path.join(process.cwd(), "src/lib/theming/themes.css"), "utf8");
 
+/**
+ * The stylesheet is a build artifact so tokens exist before React hydrates
+ * (static exports, the audience window's first paint, the preview files). The
+ * TS resolver is the source of truth; this test keeps them identical.
+ */
 describe("generated themes.css", () => {
-  it("is exactly what themes.ts generates", () => {
-    // If this fails, run `npm run themes:css`. The stylesheet is a build
-    // artifact; the TS module is the source of truth.
+  it("is exactly what the resolver generates", async () => {
+    // Imported lazily: the script also writes the file as a side effect.
+    const { themesToCss } = await import("../../scripts/build-themes-css");
     expect(css).toBe(themesToCss());
   });
 
-  it("has one block per theme, keyed by data-theme", () => {
-    for (const theme of THEMES) {
-      expect(css).toContain(`[data-theme="${theme.id}"]`);
-      expect(css).toContain(`--bg: ${theme.bg};`);
-      expect(css).toContain(`--ink: ${theme.ink};`);
+  it("has one scope per colour mood", () => {
+    for (const mood of MOOD_IDS) {
+      expect(css, `${mood} missing`).toContain(`[data-theme="${mood}"]`);
     }
-    expect(css.match(/\[data-theme=/g)).toHaveLength(THEMES.length);
   });
 
-  it("switches tokens with an attribute selector, not a class", () => {
-    // The spec requires data-theme on the deck root so any subtree can be
-    // themed; class-based theming would not nest.
-    expect(css).not.toMatch(/^\.[a-z-]+theme/m);
+  it("has one scope per appearance, so a look can be chosen without a mood", () => {
+    for (const appearance of APPEARANCE_IDS) {
+      expect(css, `${appearance} missing`).toContain(`[data-theme="${appearance}"]`);
+    }
   });
 
-  it("declares the accent triple for every accent of every theme", () => {
-    for (const theme of THEMES) {
+  it("declares the semantic roles for every scope", () => {
+    const roles = [
+      "--role-canvas",
+      "--role-surface",
+      "--role-text",
+      "--role-text-muted",
+      "--role-accent",
+      "--role-on-accent",
+      "--role-border",
+      "--role-connector",
+      "--role-focus",
+      "--role-state-selected",
+      "--role-success",
+      "--role-danger",
+      "--role-icon",
+    ];
+    for (const role of roles) {
+      expect(css.split(`${role}:`).length - 1, `${role} count`).toBeGreaterThanOrEqual(
+        MOOD_IDS.length + APPEARANCE_IDS.length
+      );
+    }
+  });
+
+  it("emits the accent triple for every accent of every mood", () => {
+    for (const mood of MOOD_IDS) {
+      const theme = resolveDeckTheme({ mood });
       theme.accents.forEach((accent, index) => {
         const n = index + 1;
         expect(css).toContain(`--accent-${n}: ${accent.fill};`);
@@ -38,28 +66,95 @@ describe("generated themes.css", () => {
     }
   });
 
-  it("exposes the selection colour and the shape rules", () => {
-    expect(css).toContain(`--select: ${SELECT_COLOR};`);
+  it("switches tokens with an attribute selector, not a class", () => {
+    // data-theme on the deck root means any subtree can be themed; a class
+    // would not nest the way slide-level overrides need.
+    expect(css).not.toMatch(/^\.[a-z-]+theme/m);
+  });
+
+  it("keeps the shape and type rules consistent with the TS constants", () => {
     expect(css).toContain(`--radius: ${SHAPE.radiusEm}em;`);
-    // 0.1em of 28px body → 3px, floored at 2px.
-    expect(css).toMatch(/--line-width: [23]px;/);
     expect(css).toContain("--select-width: 3px;");
     expect(css).toContain("--select-gap: 2px;");
+    expect(css).toContain(`--type-min: ${TYPE_SCALE.min}px;`);
+    expect(css).toContain(`--type-body: ${TYPE_SCALE.body}px;`);
+    expect(css).toContain(`--type-title: ${TYPE_SCALE.title}px;`);
+    expect(css).toContain(`--type-section: ${TYPE_SCALE.section}px;`);
   });
 
   it("never declares a sub-20px type floor", () => {
-    expect(css).toContain("--type-min: 20px;");
-    expect(css).toContain("--type-body: 28px;");
-    expect(css).toContain("--type-title: 52px;");
-    expect(css).toContain("--type-section: 34px;");
+    for (const match of css.matchAll(/--type-(min|body|section|title): (\d+)px/g)) {
+      expect(Number(match[2]), match[0]).toBeGreaterThanOrEqual(20);
+    }
   });
 
-  it("font stack is Inter with a system fallback", () => {
+  it("never emits a line thinner than 2px", () => {
+    expect(css).toMatch(/--line-width: [2-9]px;/);
+  });
+
+  it("uses Inter with a system fallback", () => {
     expect(css).toMatch(/--font-sans: [^;]*Inter[^;]*system-ui[^;]*;/);
   });
 
-  it("only offers the three extra light backgrounds", () => {
-    const withValues = BACKGROUNDS.filter((b) => b.value);
-    expect(withValues.map((b) => b.value)).toEqual(["#FAF6F1", "#F3F6FA", "#EEF3EC"]);
+  it("declares no colour outside a token", () => {
+    // Every chromatic value in the stylesheet must be a custom property
+    // definition. A bare `color: #333` here would be a hardcoded colour that
+    // no theme can reach.
+    let inComment = false;
+    for (const line of css.split("\n")) {
+      const trimmed = line.trim();
+      if (inComment) {
+        if (trimmed.includes("*/")) inComment = false;
+        continue;
+      }
+      if (trimmed.startsWith("/*")) {
+        if (!trimmed.includes("*/")) inComment = true;
+        continue;
+      }
+      if (!trimmed) continue;
+      // Selector lines end in a brace; declarations end in a semicolon.
+      if (trimmed.endsWith("{")) continue;
+      if (trimmed.includes(":")) {
+        expect(trimmed.trimStart().startsWith("--"), `hardcoded declaration: ${trimmed}`).toBe(true);
+      }
+    }
+  });
+});
+
+describe("themeToCssVars", () => {
+  it("returns every role as a CSS custom property", () => {
+    const vars = themeToCssVars(resolveDeckTheme({ mood: "ocean" })) as Record<string, string>;
+    for (const key of [
+      "--role-canvas",
+      "--role-surface",
+      "--role-text",
+      "--role-accent",
+      "--role-connector",
+      "--role-focus",
+    ]) {
+      expect(vars[key], key).toMatch(/^#[0-9a-fA-F]{6}$/);
+    }
+  });
+
+  it("keeps the legacy --slide-* names the layouts already read", () => {
+    const vars = themeToCssVars(resolveDeckTheme({ mood: "ocean" })) as Record<string, string>;
+    for (const key of [
+      "--slide-paper",
+      "--slide-ink",
+      "--slide-ink-muted",
+      "--slide-accent",
+      "--slide-accent-ink",
+      "--slide-accent-2",
+      "--slide-accent-line",
+    ]) {
+      expect(vars[key], key).toBeTruthy();
+    }
+  });
+
+  it("emits a distinguishable colour per accent", () => {
+    const theme = resolveDeckTheme({ mood: "spectrum" });
+    const vars = themeToCssVars(theme) as Record<string, string>;
+    const accents = theme.accents.map((_, i) => vars[`--accent-${i + 1}`]);
+    expect(new Set(accents).size).toBe(theme.accents.length);
   });
 });
