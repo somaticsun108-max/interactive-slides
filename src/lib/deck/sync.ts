@@ -14,6 +14,7 @@
  */
 
 import type { Slide } from "./slide-types";
+import { isThemePref } from "@/lib/theming/pref";
 
 export const SYNC_VERSION = 1;
 
@@ -164,40 +165,6 @@ export function channelName(deckId: string): string {
  * Validate an incoming message. Anything malformed, from another deck, or from
  * another protocol version is ignored rather than crashing the audience window.
  */
-/** Hex colour, the only colour format a theme may carry. */
-const HEX = /^#[0-9a-fA-F]{6}$/;
-
-/**
- * Validate a theme block arriving over the channel. Strict on purpose: this is
- * attacker-reachable (any page on the origin can post), so it accepts only the
- * documented fields and only hex colours.
- */
-function isThemePref(value: unknown): value is DeckThemePref {
-  if (!value || typeof value !== "object") return false;
-  const t = value as Partial<DeckThemePref> & Record<string, unknown>;
-  if (typeof t.themeId !== "string" || t.themeId.length > 40) return false;
-  if (t.custom !== undefined && t.custom !== null) {
-    if (typeof t.custom !== "object") return false;
-    const c = t.custom as { seed?: unknown; bg?: unknown; mode?: unknown };
-    if (typeof c.seed !== "string" || !HEX.test(c.seed)) return false;
-    if (c.bg !== undefined && (typeof c.bg !== "string" || !HEX.test(c.bg))) return false;
-    if (c.mode !== undefined && c.mode !== "legible" && c.mode !== "faithful") return false;
-  }
-  if (t.faithful !== undefined && typeof t.faithful !== "boolean") return false;
-  if (t.background !== undefined && t.background !== null) {
-    if (typeof t.background !== "string" || !HEX.test(t.background)) return false;
-  }
-  if (
-    t.accentMode !== undefined &&
-    t.accentMode !== "single" &&
-    t.accentMode !== "rainbow" &&
-    t.accentMode !== "alternate"
-  ) {
-    return false;
-  }
-  return true;
-}
-
 export function parseMessage(raw: unknown, deckId: string): AudienceMessage | null {
   if (!raw || typeof raw !== "object") return null;
   const msg = raw as Partial<AudienceMessage> & { deckId?: unknown; v?: unknown; type?: unknown };
