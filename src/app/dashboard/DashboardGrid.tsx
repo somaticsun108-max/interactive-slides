@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Copy, FilePlus2, LayoutTemplate, LogOut, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Copy, FilePlus2, FileText, LayoutTemplate, LogOut, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { TEMPLATES } from "@/lib/templates";
 import type { Deck, Slide } from "@/lib/types";
@@ -131,6 +131,13 @@ export default function DashboardGrid({ decks, email }: { decks: DeckMeta[]; ema
           <span className="hidden text-xs text-slate-400 md:inline" title={email}>
             {email}
           </span>
+          <Link
+            href="/decks"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+            title="Decks generated from a script file"
+          >
+            <FileText size={14} /> Script decks
+          </Link>
           <form action={logoutAction}>
             <button
               type="submit"
@@ -196,8 +203,14 @@ export default function DashboardGrid({ decks, email }: { decks: DeckMeta[]; ema
             </div>
             <h2 className="mt-4 text-lg font-semibold tracking-[-0.01em] text-slate-900">No decks yet</h2>
             <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
-              Start from a blank slide or pick one of the ten templates.
+              Start from a blank slide or pick one of the ten templates — or generate a deck from a script file.
             </p>
+            <Link
+              href="/decks"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 transition hover:text-indigo-500"
+            >
+              <FileText size={15} /> Import a script
+            </Link>
             <button
               onClick={() => setPickerOpen(true)}
               className="mt-6 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500"

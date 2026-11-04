@@ -7,6 +7,7 @@ import { useCurrentSlide, useDeck } from "@/store/deckStore";
 import CanvasObject from "./canvas/CanvasObject";
 import ResizeFrame from "./canvas/ResizeFrame";
 import ActionHost from "@/components/shared/ActionHost";
+import { backgroundStyle } from "@/components/shared/background";
 
 /** The 16:9 editing canvas: background, draggable objects, resize frame. */
 export default function Canvas() {
@@ -66,8 +67,8 @@ export default function Canvas() {
     >
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div
-          className="relative rounded-md bg-white shadow-slide ring-1 ring-slate-900/5"
-          style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}
+          className="relative overflow-hidden rounded-md shadow-slide ring-1 ring-slate-900/5"
+          style={{ width: CANVAS_W * scale, height: CANVAS_H * scale, ...backgroundStyle(slide) }}
           onPointerDown={(e) => {
             if (e.target === e.currentTarget) select(null);
           }}

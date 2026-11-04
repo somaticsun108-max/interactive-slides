@@ -42,7 +42,11 @@ const STATEMENTS = [
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) {
-    console.warn("[migrate] DATABASE_URL is not set - skipping migration (tables must exist before any DB query).");
+    console.warn(
+      "[migrate] DATABASE_URL is not set - skipping migration.\n" +
+        "[migrate] The app still builds, but signup/login, saving, /dashboard, /decks and presenting\n" +
+        "[migrate] will fail until DATABASE_URL is set for this environment."
+    );
     return;
   }
   // @neondatabase/serverless v1.x: plain calls are gone; raw statements
@@ -52,6 +56,25 @@ async function main() {
     await sql.query(stmt);
   }
   console.log(`[migrate] ok: ${STATEMENTS.length} statements applied (idempotent).`);
+
+  // Verify the tables the app depends on actually exist in this database.
+  // A missing table is a configuration problem, not a build failure, so this
+  // reports loudly instead of breaking deploys.
+  const expected = ["users", "decks", "script_decks"];
+  try {
+    const rows = (await sql.query(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+    )) as Array<{ table_name: string }>;
+    const present = new Set(rows.map((r) => r.table_name));
+    const missing = expected.filter((t) => !present.has(t));
+    if (missing.length > 0) {
+      console.warn(`[migrate] WARNING: missing table(s): ${missing.join(", ")} - run npm run db:migrate against this database.`);
+    } else {
+      console.log(`[migrate] verified tables: ${expected.join(", ")}`);
+    }
+  } catch (err) {
+    console.warn("[migrate] could not verify tables:", err instanceof Error ? err.message : err);
+  }
 }
 
 main().catch((err) => {
