@@ -83,6 +83,17 @@ export interface Deck {
     fileName?: string;
   };
   themeId: string;
+  /**
+   * Design tokens. Absent on decks imported before themes existed; the viewer
+   * falls back to `themeId`, then to the default palette.
+   */
+  theme?: {
+    themeId: string;
+    custom?: { seed: string; bg?: string; mode?: "legible" | "faithful" } | null;
+    faithful?: boolean;
+    background?: string | null;
+    accentMode?: "single" | "rainbow" | "alternate";
+  };
 }
 
 /** Total narration length across a deck. */

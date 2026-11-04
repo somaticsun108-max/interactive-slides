@@ -110,6 +110,8 @@ export type AccentMode = "single" | "rainbow" | "alternate";
  */
 export interface DeckTheme {
   themeId: string;
+  /** Present when `themeId` is "custom": the seed the palette is built from. */
+  custom?: { seed: string; bg?: string; mode?: "legible" | "faithful" } | null;
   faithful?: boolean;
   background?: string | null;
   accentMode?: AccentMode;

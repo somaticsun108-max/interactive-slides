@@ -30,6 +30,21 @@ export interface AudienceSlide {
   visibleSteps?: number;
   /** Brand kit id, so the audience renders with the deck's theme. */
   themeId: string;
+  /**
+   * The deck's full theme preference, so the audience sees the same palette
+   * (including a custom one) as the presenter. Optional: older presenters send
+   * `themeId` only, which still resolves.
+   */
+  theme?: DeckThemePref;
+}
+
+/** The theme preference as it crosses the channel. */
+export interface DeckThemePref {
+  themeId: string;
+  custom?: { seed: string; bg?: string; mode?: "legible" | "faithful" } | null;
+  faithful?: boolean;
+  background?: string | null;
+  accentMode?: "single" | "rainbow" | "alternate";
 }
 
 /**
@@ -121,14 +136,19 @@ export function navigate(
  * Deliberately constructs a new object field by field: `notes` is never copied,
  * so narration cannot leak through a spread even if the Slide type grows.
  */
-export function toAudienceSlide(slide: Slide, stepIndex: number): AudienceSlide {
+export function toAudienceSlide(
+  slide: Slide,
+  stepIndex: number,
+  themePref?: DeckThemePref | null
+): AudienceSlide {
   const payload: AudienceSlide = {
     id: slide.id,
     layoutId: slide.layoutId,
     headline: slide.headline,
     body: [...slide.body],
-    themeId: slide.themeId,
+    themeId: themePref?.themeId ?? slide.themeId,
   };
+  if (themePref) payload.theme = themePref;
   if (slide.eyebrow !== undefined) payload.eyebrow = slide.eyebrow;
   if (slide.subtitle !== undefined) payload.subtitle = slide.subtitle;
   if (slide.layoutId === "content.steps") payload.visibleSteps = Math.max(0, stepIndex + 1);
@@ -144,6 +164,40 @@ export function channelName(deckId: string): string {
  * Validate an incoming message. Anything malformed, from another deck, or from
  * another protocol version is ignored rather than crashing the audience window.
  */
+/** Hex colour, the only colour format a theme may carry. */
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+/**
+ * Validate a theme block arriving over the channel. Strict on purpose: this is
+ * attacker-reachable (any page on the origin can post), so it accepts only the
+ * documented fields and only hex colours.
+ */
+function isThemePref(value: unknown): value is DeckThemePref {
+  if (!value || typeof value !== "object") return false;
+  const t = value as Partial<DeckThemePref> & Record<string, unknown>;
+  if (typeof t.themeId !== "string" || t.themeId.length > 40) return false;
+  if (t.custom !== undefined && t.custom !== null) {
+    if (typeof t.custom !== "object") return false;
+    const c = t.custom as { seed?: unknown; bg?: unknown; mode?: unknown };
+    if (typeof c.seed !== "string" || !HEX.test(c.seed)) return false;
+    if (c.bg !== undefined && (typeof c.bg !== "string" || !HEX.test(c.bg))) return false;
+    if (c.mode !== undefined && c.mode !== "legible" && c.mode !== "faithful") return false;
+  }
+  if (t.faithful !== undefined && typeof t.faithful !== "boolean") return false;
+  if (t.background !== undefined && t.background !== null) {
+    if (typeof t.background !== "string" || !HEX.test(t.background)) return false;
+  }
+  if (
+    t.accentMode !== undefined &&
+    t.accentMode !== "single" &&
+    t.accentMode !== "rainbow" &&
+    t.accentMode !== "alternate"
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function parseMessage(raw: unknown, deckId: string): AudienceMessage | null {
   if (!raw || typeof raw !== "object") return null;
   const msg = raw as Partial<AudienceMessage> & { deckId?: unknown; v?: unknown; type?: unknown };
@@ -161,6 +215,9 @@ export function parseMessage(raw: unknown, deckId: string): AudienceMessage | nu
       if (typeof m.slide.headline !== "string" || !Array.isArray(m.slide.body)) return null;
       // Refuse payloads that carry notes, whatever produced them.
       if ("notes" in m.slide || "narration" in m.slide) return null;
+      // A theme block is optional, but if present it must be well-formed and
+      // must not smuggle anything but colours and modes across.
+      if (m.slide.theme !== undefined && !isThemePref(m.slide.theme)) return null;
       return m;
     }
     case "session-end": {
@@ -178,6 +235,7 @@ export function parseMessage(raw: unknown, deckId: string): AudienceMessage | nu
       if (!isInt(m.slideIndex) || !isInt(m.stepIndex) || !isInt(m.seq)) return null;
       if (!m.slide || typeof m.slide.headline !== "string" || !Array.isArray(m.slide.body)) return null;
       if ("notes" in m.slide || "narration" in m.slide) return null;
+      if (m.slide.theme !== undefined && !isThemePref(m.slide.theme)) return null;
       return m;
     }
     default:

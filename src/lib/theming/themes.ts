@@ -163,6 +163,74 @@ export function darken(hex: string, percent: number): string {
  * Returns the winner plus the ratio it achieves, so the theme test can assert
  * the pairing is legible.
  */
+/** WCAG AA for normal text. Every derived colour here aims at this. */
+export const TEXT_MIN = 4.5;
+
+/** Nudge a colour's HSL lightness, keeping hue and saturation. */
+function withLightness(hex: string, delta: number): string {
+  const hsl = rgbToHsl(parseHex(hex));
+  return toHex(hslToRgb({ ...hsl, l: Math.max(0, Math.min(100, hsl.l + delta)) }));
+}
+
+/**
+ * The legible pairing for a fill, changing as little as possible.
+ *
+ * Order of preference:
+ *  1. white or ink as-is, if either already reaches `min` (bigger ratio wins);
+ *  2. the nearest lightness nudge of the fill that lets one of them reach
+ *     `min` — smallest movement first, so a palette stays recognisable.
+ *
+ * Returns how far the fill had to move, so a caller can report "adjusted".
+ */
+export function legiblePair(
+  fill: string,
+  ink: string,
+  min = TEXT_MIN
+): { fill: string; text: string; ratio: number; deltaL: number } {
+  const white = contrastRatio(fill, WHITE);
+  const inkRatio = contrastRatio(fill, ink);
+  if (Math.max(white, inkRatio) >= min) {
+    return white >= inkRatio
+      ? { fill, text: WHITE, ratio: white, deltaL: 0 }
+      : { fill, text: ink, ratio: inkRatio, deltaL: 0 };
+  }
+
+  // Neither works untouched: move the fill by the smallest amount that does.
+  for (let step = 1; step <= 40; step++) {
+    for (const delta of [-step, step]) {
+      const candidate = withLightness(fill, delta);
+      const vsWhite = contrastRatio(candidate, WHITE);
+      const vsInk = contrastRatio(candidate, ink);
+      const best = Math.max(vsWhite, vsInk);
+      if (best >= min) {
+        return {
+          fill: candidate,
+          text: vsWhite >= vsInk ? WHITE : ink,
+          ratio: best,
+          deltaL: delta,
+        };
+      }
+    }
+  }
+  // Unreachable for any real colour, but stay honest rather than looping.
+  return { fill, text: white >= inkRatio ? WHITE : ink, ratio: Math.max(white, inkRatio), deltaL: 0 };
+}
+
+/**
+ * Force white text on a fill, darkening the fill only as far as needed.
+ * This is the "faithful" look: one consistent text colour on every fill.
+ */
+export function whiteTextPair(fill: string, min = TEXT_MIN): { fill: string; ratio: number; deltaL: number } {
+  const ratio = contrastRatio(fill, WHITE);
+  if (ratio >= min) return { fill, ratio, deltaL: 0 };
+  for (let step = 1; step <= 60; step++) {
+    const candidate = withLightness(fill, -step);
+    const next = contrastRatio(candidate, WHITE);
+    if (next >= min) return { fill: candidate, ratio: next, deltaL: -step };
+  }
+  return { fill, ratio, deltaL: 0 };
+}
+
 export function textOn(fill: string, ink: string): { color: string; ratio: number } {
   const whiteRatio = contrastRatio(fill, WHITE);
   const inkRatio = contrastRatio(fill, ink);
@@ -212,14 +280,15 @@ export type AccentMode = "single" | "rainbow" | "alternate";
 export interface Theme {
   id: string;
   name: string;
-  /** True when the theme's own pairs are below 4.5:1 and rely on large text. */
-  largeTextOnly?: boolean;
-  /** Accent indexes whose text pairing is a documented, opt-in exception. */
-  belowFloor?: number[];
   /** Accent rotation this theme prefers for new objects. */
   defaultAccentMode?: AccentMode;
   /** Optional note shown in the picker. */
   note?: string;
+  /**
+   * Fills whose HSL lightness had to move to reach 4.5:1 — only ever populated
+   * by "faithful" builds, where a single text colour must work on every fill.
+   */
+  adjustedFills?: { from: string; to: string }[];
   bg: string;
   ink: string;
   inkMuted: string;
@@ -236,23 +305,18 @@ export interface ThemeSpec {
   ink: string;
   /** Optional explicit secondary text colour. */
   inkMuted?: string;
+  /**
+   * Text colour to consider for fills, when it differs from `ink`. A dark
+   * theme has light ink for body copy but needs dark text on pastel fills.
+   */
+  fillInk?: string;
   root?: { fill: string; text: string } | null;
   /** Fill colours; text and line colours are derived. */
   fills: string[];
-  /** Override the derived text colour per accent (used by "faithful" mode). */
-  textOverrides?: string[];
-  /**
-   * Accent indexes that intentionally sit below the `largeTextOnly` floor.
-   * Only "faithful" uses this: it reproduces the source deck exactly, and the
-   * affected fills carry large bold text there. Listed so the exception is
-   * explicit, counted, and visible in the theme object.
-   */
-  belowFloor?: number[];
   /** Accent rotation this theme prefers for new objects. */
   defaultAccentMode?: AccentMode;
   /** Explicit line colours, by accent index (used where the spec pins them). */
   lineOverrides?: Record<number, string>;
-  largeTextOnly?: boolean;
   note?: string;
   alt?: string;
 }
@@ -262,15 +326,28 @@ export interface ThemeSpec {
  * `faithful` forces white text on every fill (lower contrast, opt-in only).
  */
 export function buildTheme(spec: ThemeSpec, opts: { forceWhiteText?: boolean } = {}): Theme {
+  const adjustedFills: { from: string; to: string }[] = [];
+
   const accents: AccentToken[] = spec.fills.map((fill, index) => {
     const explicitLine = spec.lineOverrides?.[index];
-    const text = opts.forceWhiteText
-      ? WHITE
-      : (spec.textOverrides?.[index] ?? textOn(fill, spec.ink).color);
+
+    // "Faithful" keeps one text colour (white) on every fill and darkens the
+    // fill only as far as legibility requires; the default mode leaves fills
+    // exactly as specified and picks the better text colour for each.
+    const pair = opts.forceWhiteText
+      ? (() => {
+          const forced = whiteTextPair(fill);
+          return { fill: forced.fill, text: WHITE, deltaL: forced.deltaL };
+        })()
+      : legiblePair(fill, spec.fillInk ?? spec.ink);
+
+    if (pair.deltaL !== 0) adjustedFills.push({ from: fill, to: pair.fill });
+
     return {
-      fill,
-      text,
-      line: explicitLine ?? lineColorFor(fill, spec.bg),
+      fill: pair.fill,
+      text: pair.text,
+      // Lines are derived from the colour that actually ships.
+      line: explicitLine ?? lineColorFor(pair.fill, spec.bg),
     };
   });
 
@@ -280,9 +357,8 @@ export function buildTheme(spec: ThemeSpec, opts: { forceWhiteText?: boolean } =
   return {
     id: spec.id,
     name: spec.name,
-    ...(spec.largeTextOnly ? { largeTextOnly: true } : {}),
     ...(spec.note ? { note: spec.note } : {}),
-    ...(spec.belowFloor ? { belowFloor: spec.belowFloor } : {}),
+    ...(adjustedFills.length ? { adjustedFills } : {}),
     ...(spec.defaultAccentMode ? { defaultAccentMode: spec.defaultAccentMode } : {}),
     bg: spec.bg,
     ink: spec.ink,
@@ -306,25 +382,6 @@ const TERRACOTTA_LEGIBLE: ThemeSpec = {
   ink: "#3D474D",
   root: null,
   fills: ["#BA594A", "#F79B8D", "#F1D1C3", "#87BBC4", "#5A798C", "#324758"],
-};
-
-/**
- * terracotta, "faithful" mode: white text on every fill, exactly like the
- * source deck. Three of these pairs are below 4.5:1, so it is opt-in and
- * flagged `largeTextOnly`.
- */
-const TERRACOTTA_FAITHFUL: ThemeSpec = {
-  id: "terracotta-faithful",
-  name: "Terracotta (faithful)",
-  bg: "#FFFFFF",
-  ink: "#3D474D",
-  root: null,
-  fills: ["#C26B5D", "#F79B8D", "#F1D1C3", "#7EB6C0", "#628498", "#324758"],
-  largeTextOnly: true,
-  // Fills 2, 3 and 4 sit below the 3:1 large-text floor with white text; this
-  // is inherent to reproducing the source deck, so it is opt-in and declared.
-  belowFloor: [1, 2, 3],
-  note: "White text on every fill, like the original. Lower contrast — best for large bold text.",
 };
 
 const SPECTRUM: ThemeSpec = {
@@ -357,23 +414,20 @@ const OCEAN: ThemeSpec = {
   fills: ["#2B6F8E", "#347D8D", "#5FB3A1", "#8CC084", "#586DCA", "#8763B0"],
 };
 
-/** Four vivid fills; white on them is 2.9–3.8:1, so large bold text only. */
+/**
+ * Four vivid fills. On `#AC84F4` dark ink (2.95) actually beats white (2.85),
+ * so the derivation picks ink there and white on the other three — each fill
+ * keeps its exact specified colour and still clears 4.5:1.
+ */
 const VIVID_VIDEO: ThemeSpec = {
   id: "vivid-video",
   name: "Vivid",
   bg: "#FFFFFF",
-  ink: "#4B4E4E",
+  ink: "#3F4245",
   inkMuted: "#727275",
   root: { fill: "#1F2733", text: WHITE },
   fills: ["#487BFF", "#AC84F4", "#F96196", "#FF4818"],
-  // White per the source; accent 2 lands at 2.85:1 either way, so it is part of
-  // the documented large-text-only exception.
-  textOverrides: [WHITE, WHITE, WHITE, WHITE],
-  largeTextOnly: true,
-  // Fills 2 and 3 land under 3:1 with white; nothing darker is available on
-  // #AC84F4 (ink scores 2.95), so they are declared rather than fudged.
-  belowFloor: [1, 2],
-  note: "Vivid fills. White-on-fill contrast is under 4.5:1 — use for large bold text (24px+).",
+  note: "Vivid fills with a legible text colour chosen per fill.",
 };
 
 /** Dark surface with the pastel palette as accents and ink text on the fills. */
@@ -384,15 +438,15 @@ const DARK: ThemeSpec = {
   alt: "#141A24",
   ink: "#E6EAF0",
   root: { fill: "#141A24", text: "#E6EAF0" },
-  // Pastel fills with dark ink on them (the spec: "ink text on the fills").
+  // Pastel fills with dark ink on them (the spec: "ink text on the fills"),
+  // while body copy stays light on the dark background.
+  fillInk: "#2D3748",
   fills: ["#F4A6A0", "#F6C28B", "#F3E08A", "#B5D99C", "#9CD3D0", "#A9C4EB", "#C9B6E4"],
-  textOverrides: ["#2D3748", "#2D3748", "#2D3748", "#2D3748", "#2D3748", "#2D3748", "#2D3748"],
 };
 
 /** Every palette, in picker order. */
 export const SPECS: ThemeSpec[] = [
   TERRACOTTA_LEGIBLE,
-  TERRACOTTA_FAITHFUL,
   SPECTRUM,
   PASTEL,
   OCEAN,
@@ -400,9 +454,11 @@ export const SPECS: ThemeSpec[] = [
   DARK,
 ];
 
-export const THEMES: Theme[] = SPECS.map((spec) =>
-  spec.id === "terracotta-faithful" ? buildTheme(spec, { forceWhiteText: true }) : buildTheme(spec)
-);
+/**
+ * Every palette in legible mode. "Faithful" is a per-deck toggle rather than a
+ * theme of its own, so the same palette can be shown both ways.
+ */
+export const THEMES: Theme[] = SPECS.map((spec) => buildTheme(spec));
 
 export const DEFAULT_THEME_ID = "terracotta";
 
@@ -528,10 +584,9 @@ export interface ResolvedTheme extends Theme {
 /**
  * Resolve a stored preference into concrete tokens.
  *
- * Faithful mode means "reproduce the source deck": white text on every fill.
- * That is only available for themes that opt in (`largeTextOnly`), because it
- * deliberately trades contrast for fidelity. Everything else derives text
- * colour by rule.
+ * `faithful` puts one text colour (white) on every fill, which is what makes a
+ * source deck look the way it does. Light fills cannot carry white at 4.5:1, so
+ * each is deepened by the minimum needed — the swap never drops below legible.
  */
 export function resolveDeckTheme(pref?: {
   themeId?: string | null;
@@ -539,8 +594,11 @@ export function resolveDeckTheme(pref?: {
   background?: string | null;
   accentMode?: AccentMode;
 }): ResolvedTheme {
+  // "Faithful" means one text colour on every fill, derived from whichever
+  // palette is selected. It is a mode, not a property of one theme, so any
+  // palette can be faithful — each fill is adjusted to stay at 4.5:1.
   const base = getThemeById(pref?.themeId);
-  const faithful = Boolean(pref?.faithful) && base.largeTextOnly === true;
+  const faithful = Boolean(pref?.faithful);
   const theme = faithful ? buildTheme(getSpec(base.id), { forceWhiteText: true }) : base;
   const backgroundOverride = pref?.background ?? null;
 
@@ -571,4 +629,108 @@ export function accentFor(theme: Theme, index: number, mode: AccentMode): Accent
     return accents[index % Math.min(2, n)];
   }
   return accents[0];
+}
+
+/* ------------------------------------------------------------------ */
+/* Custom themes                                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A theme someone made from a seed colour, stored on the deck.
+ *
+ * Deliberately small: a seed, a background and a mood. Everything else is
+ * derived by the same rules as the built-ins, so a custom theme cannot be
+ * illegible — there is no way to express an unreadable pairing.
+ */
+export interface CustomThemeSpec {
+  /** The colour they picked: drives every accent. */
+  seed: string;
+  /** Slide background. Defaults to white. */
+  bg?: string;
+  /** "legible" picks the best text colour per fill; "faithful" forces one. */
+  mode?: "legible" | "faithful";
+}
+
+/** How far apart generated accents sit on the colour wheel, in degrees. */
+const ACCENT_ROTATIONS = [0, 32, -28, 68, -64, 148];
+
+/**
+ * Derive a full palette from one seed colour.
+ *
+ * Accents are rotations of the seed's hue (keeping its saturation and
+ * lightness character), and each one is then pushed to a legible pairing by
+ * `buildTheme` — so the generated theme is readable by construction.
+ */
+export function customToTheme(custom: CustomThemeSpec, name = "Custom"): Theme {
+  const seed = parseHex(custom.seed);
+  const hsl = rgbToHsl(seed);
+  const bg = custom.bg ?? "#FFFFFF";
+
+  // Body ink: a deeply darkened seed would be muddy, so follow the background's
+  // luminance and keep a little of the seed's hue for coherence.
+  const ink = toHex(
+    hslToRgb({
+      h: hsl.h,
+      s: Math.min(14, hsl.s * 0.25),
+      l: relativeLuminance(bg) > 0.5 ? 17 : 93,
+    })
+  );
+
+  const fills = ACCENT_ROTATIONS.map((delta, index) =>
+    toHex(
+      hslToRgb({
+        h: hsl.h + delta,
+        // Later accents drift lighter/darker so a rainbow of fills reads as a
+        // set rather than six copies of one colour.
+        s: Math.min(88, Math.max(38, hsl.s)),
+        l: Math.min(74, Math.max(30, hsl.l + (index % 3 === 1 ? 8 : index % 3 === 2 ? -6 : 0))),
+      })
+    )
+  );
+
+  return buildTheme(
+    {
+      id: "custom",
+      name,
+      bg,
+      ink,
+      root: { fill: ink, text: WHITE },
+      fills,
+      note: `Built from ${custom.seed}.`,
+    },
+    { forceWhiteText: custom.mode === "faithful" }
+  );
+}
+
+/**
+ * The theme a deck actually renders with: a built-in palette by id, or a
+ * custom one derived from the deck's own seed colour.
+ */
+export function resolveTheme(pref?: {
+  themeId?: string | null;
+  custom?: CustomThemeSpec | null;
+  faithful?: boolean;
+  background?: string | null;
+  accentMode?: AccentMode;
+}): ResolvedTheme {
+  const custom = pref?.custom ?? null;
+  if (custom) {
+    const theme = customToTheme({
+      ...custom,
+      mode: pref?.faithful ? "faithful" : (custom.mode ?? "legible"),
+    });
+    return {
+      ...theme,
+      ...(pref?.background ? { bg: pref.background } : {}),
+      faithful: Boolean(pref?.faithful),
+      accentMode: pref?.accentMode ?? theme.defaultAccentMode ?? "single",
+      backgroundOverride: pref?.background ?? null,
+    };
+  }
+  return resolveDeckTheme(pref);
+}
+
+/** A short, readable swatch list for a custom theme, for the picker. */
+export function customSwatch(custom: CustomThemeSpec): string[] {
+  return swatchFor(customToTheme(custom));
 }

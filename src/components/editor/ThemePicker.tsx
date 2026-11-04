@@ -2,8 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Palette } from "lucide-react";
-import { BACKGROUNDS, THEMES, getThemeById, swatchFor } from "@/lib/theming/themes";
+import {
+  BACKGROUNDS,
+  THEMES,
+  customToTheme,
+  getThemeById,
+  swatchFor,
+} from "@/lib/theming/themes";
 import type { DeckTheme } from "@/lib/types";
+
+/** Seeds offered as starting points, all of them tested for legibility. */
+const SEEDS = ["#BA594A", "#487BFF", "#2E8B74", "#7B4FE0", "#D6336C", "#B8860B"];
 
 /** One theme, with its colours visible at a glance. */
 function ThemeOption({
@@ -68,9 +77,14 @@ export default function ThemePicker({
   const rootRef = useRef<HTMLDivElement>(null);
 
   const themeId = value?.themeId ?? "terracotta";
-  const active = getThemeById(themeId);
-  const supportsFaithful = active.largeTextOnly === true;
-  const faithful = Boolean(value?.faithful) && supportsFaithful;
+  const isCustom = themeId === "custom" && Boolean(value?.custom);
+  // A custom theme is derived from its seed, so it is previewed exactly as it
+  // will render — including the derived text colours.
+  const active = isCustom && value?.custom ? customToTheme(value.custom) : getThemeById(themeId);
+  // Faithful ("one text colour on every fill") is a mode every palette
+  // supports: fills are deepened by the minimum amount needed to stay at 4.5:1.
+  const faithful = Boolean(value?.faithful);
+  const customSeed = value?.custom?.seed ?? SEEDS[0];
 
   useEffect(() => {
     if (!open) return;
@@ -135,6 +149,61 @@ export default function ThemePicker({
           <div className="mx-1 my-1.5 border-t border-slate-100" />
 
           <div className="px-2.5 py-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Your own</p>
+            <div className="mt-1.5 flex items-center gap-2">
+              <input
+                type="color"
+                value={customSeed}
+                aria-label="Seed colour"
+                data-testid="custom-seed"
+                onChange={(e) => onChange({ themeId: "custom", custom: { seed: e.target.value } })}
+                className="h-7 w-9 cursor-pointer rounded border border-slate-200 bg-white p-0.5"
+              />
+              <div aria-hidden className="flex -space-x-1">
+                {swatchFor(customToTheme({ seed: customSeed })).map((colour, index) => (
+                  <span
+                    key={index}
+                    className="h-3.5 w-3.5 rounded-full ring-2 ring-white"
+                    style={{ background: colour }}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => onChange({ themeId: "custom", custom: { seed: customSeed } })}
+                aria-pressed={isCustom}
+                data-testid="use-custom"
+                className={`ml-auto rounded-md border px-2 py-1 text-[11px] font-medium transition ${
+                  isCustom
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                {isCustom ? "In use" : "Use this"}
+              </button>
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {SEEDS.map((seed) => (
+                <button
+                  key={seed}
+                  type="button"
+                  onClick={() => onChange({ themeId: "custom", custom: { seed } })}
+                  title={`Start from ${seed}`}
+                  aria-label={`Start from ${seed}`}
+                  className="h-4 w-4 rounded-full ring-1 ring-inset ring-black/10 transition hover:scale-110"
+                  style={{ background: seed }}
+                />
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] leading-4 text-slate-500">
+              Pick one colour. The rest of the palette is derived from it, so every pairing stays
+              readable — nothing to hand-tune.
+            </p>
+          </div>
+
+          <div className="mx-1 my-1.5 border-t border-slate-100" />
+
+          <div className="px-2.5 py-1">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Text on fills</p>
             <div className="mt-1.5 flex gap-1 rounded-lg bg-slate-100 p-0.5" data-testid="faithful-toggle">
               <button
@@ -149,15 +218,10 @@ export default function ThemePicker({
               </button>
               <button
                 type="button"
-                onClick={() => supportsFaithful && onChange({ faithful: true })}
-                disabled={!supportsFaithful}
+                onClick={() => onChange({ faithful: true })}
                 aria-pressed={faithful}
-                title={
-                  supportsFaithful
-                    ? "White text on every fill, like the original deck"
-                    : "This theme derives legible text colours instead"
-                }
-                className={`flex-1 rounded-md px-2 py-1 text-[12px] font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                title="One text colour on every fill — the original look, with fills deepened just enough to stay readable"
+                className={`flex-1 rounded-md px-2 py-1 text-[12px] font-medium transition ${
                   faithful ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -165,8 +229,9 @@ export default function ThemePicker({
               </button>
             </div>
             <p className="mt-1 text-[11px] leading-4 text-slate-500">
-              Legible picks the most readable text colour for each fill. Faithful reproduces the original
-              deck exactly (white on every fill) — best for large bold text.
+              Legible picks the most readable text colour for each fill — white or ink, whichever reads
+              better. Faithful uses one text colour throughout and deepens each fill the minimum amount
+              needed to stay at 4.5:1.
             </p>
           </div>
 

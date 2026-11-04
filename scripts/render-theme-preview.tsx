@@ -14,7 +14,7 @@ import { parseScript } from "@/lib/deck/script/parse";
 import { scriptToSlides } from "@/lib/deck/script-to-slides";
 import { SLIDE_H, SLIDE_W, getTheme, themeToCssVars } from "@/lib/deck/theme";
 import SlideRenderer from "@/components/slides/SlideRenderer";
-import { THEMES } from "@/lib/theming/themes";
+import { THEMES, customToTheme } from "@/lib/theming/themes";
 import { INTERACTIVE_PATTERNS } from "@/lib/interactive-patterns";
 import type { SlideObject } from "@/lib/types";
 
@@ -43,8 +43,11 @@ function escapeHtml(value: string): string {
   return String(value).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 }
 
-function frame(slide: (typeof deckSlides)[number], themeId: string, scale: number) {
-  const theme = getTheme(themeId);
+/** Custom themes built from one seed each — same slides, derived palette. */
+const CUSTOM_SEEDS = ["#2E8B74", "#7B4FE0", "#B8860B", "#487BFF"];
+
+function frame(slide: (typeof deckSlides)[number], themeId: string, scale: number, custom?: { seed: string }) {
+  const theme = getTheme(custom ? { themeId: "custom", custom } : themeId);
   const inner = renderToStaticMarkup(createElement(SlideRenderer, { slide, theme }));
   return `<div class="frame" style="width:${SLIDE_W * scale}px;height:${SLIDE_H * scale}px">
     <div style="transform:scale(${scale});transform-origin:top left;width:${SLIDE_W}px;height:${SLIDE_H}px">${inner}</div>
@@ -115,9 +118,17 @@ const html = `<!doctype html>
   <h1>Every theme, same slides</h1>
   <p class="sub">${THEMES.length} themes × ${sampled.length} layouts, plus each interactive pattern rendered from its object model.</p>
   ${THEMES.map(
-    (theme) => `<h2>${escapeHtml(theme.name)} <span style="color:#94a3b8">(${theme.id}${theme.largeTextOnly ? " · large text only" : ""})</span></h2>
+    (theme) => `<h2>${escapeHtml(theme.name)} <span style="color:#94a3b8">(${theme.id})</span></h2>
     <div class="row">${sampled.map((slide, i) => `<figure><figcaption>${escapeHtml(slide.layoutId)}</figcaption>${frame(slide, theme.id, 0.42)}</figure>`).join("")}</div>`
   ).join("\n")}
+  <h2>Custom themes — one seed colour each</h2>
+  <div class="row">${CUSTOM_SEEDS.map(
+    (seed) =>
+      `<figure><figcaption>${escapeHtml(seed)}</figcaption>${sampled
+        .slice(0, 2)
+        .map((slide) => frame(slide, "custom", 0.42, { seed }))
+        .join("")}</figure>`
+  ).join("")}</div>
   <h2>Interactive patterns (object model, terracotta)</h2>
   <div class="row">${INTERACTIVE_PATTERNS.map((p) => `<figure><figcaption>${escapeHtml(p.name)}</figcaption>${patternCard(p.id, "terracotta")}</figure>`).join("")}</div>
   <h2>Interactive patterns (object model, dark)</h2>
@@ -128,5 +139,6 @@ const html = `<!doctype html>
 mkdirSync(dirname(resolve(output)), { recursive: true });
 // Silence unused-var lint: themeToCssVars is exported for consumers.
 void themeToCssVars;
+void customToTheme;
 writeFileSync(resolve(output), html);
 console.log(`Rendered ${THEMES.length} themes → ${output} (${(html.length / 1024).toFixed(0)} kB)`);

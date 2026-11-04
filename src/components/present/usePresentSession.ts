@@ -81,7 +81,7 @@ export function usePresentSession(deck: Deck): PresentSession {
         slideIndex: next.slideIndex,
         stepIndex: next.stepIndex,
         total: deck.slides.length,
-        slide: toAudienceSlide(target, next.stepIndex),
+        slide: toAudienceSlide(target, next.stepIndex, deck.theme ?? null),
         seq,
       };
     },

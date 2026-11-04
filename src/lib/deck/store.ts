@@ -92,6 +92,32 @@ export async function renameDeck(ownerId: string, deckId: string, title: string)
   return !!row;
 }
 
+/**
+ * Save a deck's theme preference (owner-scoped).
+ *
+ * Only the theme block is touched, so re-styling a deck never rewrites its
+ * slides — the deck keeps whatever was generated from the script.
+ */
+export async function updateDeckTheme(
+  ownerId: string,
+  deckId: string,
+  theme: Deck["theme"]
+): Promise<boolean> {
+  if (!isDeckId(deckId)) return false;
+  const current = await getDeck(ownerId, deckId);
+  if (!current) return false;
+
+  const [row] = await getDb()
+    .update(scriptDecks)
+    .set({
+      data: { ...current.deck, theme },
+      updatedAt: new Date(),
+    })
+    .where(and(eq(scriptDecks.id, deckId), eq(scriptDecks.ownerId, ownerId)))
+    .returning({ id: scriptDecks.id });
+  return !!row;
+}
+
 /** Delete a deck (owner-scoped). Returns false when nothing was deleted. */
 export async function deleteDeck(ownerId: string, deckId: string): Promise<boolean> {
   if (!isDeckId(deckId)) return false;

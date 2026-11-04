@@ -66,7 +66,7 @@ export default function AudienceView({ deckId }: { deckId: string }) {
         <>
           <SlideRenderer
             slide={slide}
-            theme={getTheme(slide.themeId)}
+            theme={getTheme(slide.theme ?? slide.themeId)}
             scale={scale}
             visibleSteps={slide.visibleSteps}
           />

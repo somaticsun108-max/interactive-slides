@@ -2,14 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   BACKGROUNDS,
   DEFAULT_THEME_ID,
+  SPECS,
   THEMES,
   WHITE,
+  buildTheme,
   contrast,
   contrastRatio,
   darken,
   getThemeById,
   lineColorFor,
   parseHex,
+  resolveDeckTheme,
+  rgbToHsl,
   textOn,
   toHex,
 } from "@/lib/theming/themes";
@@ -24,9 +28,9 @@ const LINE_MIN = 3;
  * that produces illegible text or an invisible border fails the build here
  * rather than shipping.
  *
- * Themes flagged `largeTextOnly` are the documented exception: their fills are
- * specified as large-bold-text-only, so they must *declare* it and must still
- * clear 3:1 (the large-text threshold) rather than silently shipping 2:1.
+ * There are no exceptions. Where a source palette could not reach 4.5:1 with
+ * either white or ink, `buildTheme` derives a legible pairing instead of
+ * shipping the illegible one — detail below.
  */
 describe("every theme is legible", () => {
   for (const theme of THEMES) {
@@ -48,30 +52,14 @@ describe("every theme is legible", () => {
       });
 
       it("has legible text on every accent fill", () => {
-        // Default themes must clear AA. Themes flagged largeTextOnly are held to
-        // the large-text floor (3:1) — except for accents they explicitly
-        // declare belowFloor, which reproduce a source palette verbatim and
-        // must still be at least 1.4:1 (visible at all).
-        const minimum = theme.largeTextOnly ? 3 : TEXT_MIN;
+        // No exceptions and no large-text carve-out: every fill carries text
+        // at 4.5:1, in every theme.
         for (const [index, accent] of theme.accents.entries()) {
           const ratio = contrast(accent.text, accent.fill);
-          const declared = theme.belowFloor?.includes(index) ?? false;
-          const floor = declared ? 1.4 : minimum;
           expect(
             ratio,
             `${theme.id} accent-${index + 1} (${accent.fill}) text ${accent.text} is ${ratio}:1`
-          ).toBeGreaterThanOrEqual(floor);
-        }
-      });
-
-      it("declares every below-floor accent explicitly", () => {
-        // A theme may only dip below its floor for accents it lists, and the
-        // list may not contain indexes that actually pass.
-        for (const [index, accent] of theme.accents.entries()) {
-          if (!theme.belowFloor?.includes(index)) continue;
-          const ratio = contrast(accent.text, accent.fill);
-          expect(ratio, `${theme.id} accent-${index + 1} is listed belowFloor but passes at ${ratio}:1`)
-            .toBeLessThan(theme.largeTextOnly ? 3 : TEXT_MIN);
+          ).toBeGreaterThanOrEqual(TEXT_MIN);
         }
       });
 
@@ -97,9 +85,10 @@ describe("every theme is legible", () => {
   }
 
   it("covers every documented theme", () => {
+    // Six palettes. "Faithful" is a mode, not a seventh theme, so a palette
+    // can be shown both ways without duplicating the list.
     expect(THEMES.map((t) => t.id)).toEqual([
       "terracotta",
-      "terracotta-faithful",
       "spectrum",
       "pastel",
       "ocean",
@@ -110,16 +99,37 @@ describe("every theme is legible", () => {
     expect(getThemeById("nope").id).toBe(DEFAULT_THEME_ID);
   });
 
-  it("keeps the default theme legible (not large-text-only)", () => {
+  it("uses the specified palette exactly in the default mode", () => {
     const terracotta = getThemeById("terracotta");
-    expect(terracotta.largeTextOnly).toBeUndefined();
     // Six fills, as specified.
     expect(terracotta.accents).toHaveLength(6);
+    // Nothing adjusted: the default mode never alters a colour.
+    expect(terracotta.adjustedFills).toBeUndefined();
+    expect(terracotta.accents.map((a) => a.fill)).toEqual([
+      "#BA594A",
+      "#F79B8D",
+      "#F1D1C3",
+      "#87BBC4",
+      "#5A798C",
+      "#324758",
+    ]);
   });
 
-  it("flags the two palettes that rely on large text", () => {
-    expect(getThemeById("terracotta-faithful").largeTextOnly).toBe(true);
-    expect(getThemeById("vivid-video").largeTextOnly).toBe(true);
+  it("moves a vivid fill as little as possible, keeping its hue", () => {
+    // The vivid fills were the original conflict: none reached 4.5:1 with
+    // either text colour. Each is nudged in lightness instead of being
+    // replaced — hue is preserved and the shift is small.
+    const vivid = getThemeById("vivid-video");
+    const specified = ["#487BFF", "#AC84F4", "#F96196", "#FF4818"];
+    expect(vivid.adjustedFills).toHaveLength(specified.length);
+
+    vivid.accents.forEach((accent, index) => {
+      const before = rgbToHsl(parseHex(specified[index]));
+      const after = rgbToHsl(parseHex(accent.fill));
+      expect(Math.abs(after.h - before.h)).toBeLessThan(4);
+      expect(Math.abs(after.l - before.l)).toBeLessThan(25);
+      expect(contrast(accent.text, accent.fill)).toBeGreaterThanOrEqual(TEXT_MIN);
+    });
   });
 
   it("keeps extra backgrounds usable with every light theme", () => {
@@ -182,5 +192,71 @@ describe("colour rules", () => {
   it("darkens by HSL lightness", () => {
     const darker = darken("#808080", 10);
     expect(contrast(darker, "#FFFFFF")).toBeGreaterThan(contrast("#808080", "#FFFFFF"));
+  });
+});
+
+describe("faithful mode still has to be readable", () => {
+  const faithfulThemes = SPECS.map((spec) => buildTheme(spec, { forceWhiteText: true }));
+
+  it("is offered for every palette", () => {
+    expect(faithfulThemes).toHaveLength(SPECS.length);
+    for (const theme of faithfulThemes) {
+      expect(theme.accents.every((a) => a.text === WHITE)).toBe(true);
+    }
+  });
+
+  it("keeps white text at 4.5:1 on every fill, adjusting the fill instead", () => {
+    for (const theme of faithfulThemes) {
+      for (const [index, accent] of theme.accents.entries()) {
+        const ratio = contrast(WHITE, accent.fill);
+        expect(
+          ratio,
+          `${theme.id} faithful accent-${index + 1} (${accent.fill}) is ${ratio}:1`
+        ).toBeGreaterThanOrEqual(TEXT_MIN);
+      }
+    }
+  });
+
+  it("changes a fill as little as possible", () => {
+    // The adjustment must be a lightness nudge of the same hue, not a
+    // different colour: saturation stays put and the move is small.
+    const faithful = buildTheme(
+      { id: "t", name: "T", bg: "#FFFFFF", ink: "#3D474D", fills: ["#F1D1C3"] },
+      { forceWhiteText: true }
+    );
+    const adjusted = faithful.accents[0].fill;
+    expect(adjusted).not.toBe("#F1D1C3");
+    const before = rgbToHsl(parseHex("#F1D1C3"));
+    const after = rgbToHsl(parseHex(adjusted));
+    expect(Math.round(after.h)).toBe(Math.round(before.h));
+    expect(Math.abs(after.s - before.s)).toBeLessThan(12);
+    expect(after.l).toBeLessThan(before.l);
+  });
+
+  it("records every fill it had to change", () => {
+    const faithful = buildTheme(
+      { id: "t", name: "T", bg: "#FFFFFF", ink: "#3D474D", fills: ["#F1D1C3", "#324758"] },
+      { forceWhiteText: true }
+    );
+    // #324758 already clears 4.5:1 with white, so only the pale one moves.
+    expect(faithful.adjustedFills).toHaveLength(1);
+    expect(faithful.adjustedFills?.[0].from).toBe("#F1D1C3");
+  });
+
+  it("gives the deck a faithful variant of whatever theme is selected", () => {
+    for (const spec of SPECS) {
+      const plain = resolveDeckTheme({ themeId: spec.id });
+      const faithful = resolveDeckTheme({ themeId: spec.id, faithful: true });
+      expect(faithful.faithful).toBe(true);
+      expect(faithful.accents.every((a) => a.text === WHITE)).toBe(true);
+      // The background and ink come from the same palette either way.
+      expect(faithful.bg).toBe(plain.bg);
+      expect(faithful.ink).toBe(plain.ink);
+    }
+  });
+
+  it("is off unless the deck asks for it", () => {
+    expect(resolveDeckTheme({ themeId: "ocean" }).faithful).toBe(false);
+    expect(resolveDeckTheme({ themeId: "ocean", faithful: false }).faithful).toBe(false);
   });
 });

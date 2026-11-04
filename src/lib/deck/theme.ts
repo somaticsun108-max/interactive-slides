@@ -5,8 +5,9 @@ import {
   DEFAULT_THEME_ID,
   SHAPE,
   TYPE_SCALE,
+  type CustomThemeSpec,
   getThemeById,
-  resolveDeckTheme,
+  resolveTheme,
 } from "@/lib/theming/themes";
 
 /**
@@ -66,10 +67,18 @@ const FONT_SANS =
  * need numbers for text fitting (`fitFontSize`) but colours must stay dynamic.
  */
 export function getTheme(
-  pref?: string | { themeId?: string | null; faithful?: boolean; background?: string | null } | null
+  pref?:
+    | string
+    | {
+        themeId?: string | null;
+        custom?: CustomThemeSpec | null;
+        faithful?: boolean;
+        background?: string | null;
+      }
+    | null
 ): Theme {
   const options = typeof pref === "string" ? { themeId: pref } : (pref ?? {});
-  const resolved = resolveDeckTheme(options);
+  const resolved = resolveTheme(options);
   const accent = resolved.accents[0];
   const last = resolved.accents[resolved.accents.length - 1];
 
