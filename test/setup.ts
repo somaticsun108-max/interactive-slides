@@ -15,6 +15,18 @@ if (typeof window !== "undefined") {
   const { cleanup } = await import("@testing-library/react");
   afterEach(() => cleanup());
 
+  // jsdom implements neither ResizeObserver nor matchMedia; the canvas and a
+  // few chrome components observe element sizes.
+  if (!("ResizeObserver" in window)) {
+    class TestResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    (window as unknown as { ResizeObserver: unknown }).ResizeObserver = TestResizeObserver;
+    (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = TestResizeObserver;
+  }
+
   // jsdom does not implement matchMedia; components query it defensively.
   if (!window.matchMedia) {
     window.matchMedia = ((query: string) => ({
