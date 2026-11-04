@@ -1,6 +1,7 @@
 import type { SlideView } from "@/lib/deck/slide-types";
 import type { Theme } from "@/lib/deck/theme";
 import { Headline, SlideFrame, framePadding } from "./primitives";
+import { fitFontSize } from "./fit";
 
 /**
  * `section.divider` — a `##` branch with no On-screen text. Dark, full-bleed,
@@ -15,6 +16,15 @@ export default function SectionDivider({
   theme: Theme;
   scale?: number;
 }) {
+  const headlineSize = fitFontSize({
+    text: slide.headline,
+    maxFontSize: theme.type.h1,
+    minFontSize: 30,
+    widthPx: 1000,
+    availableHeightPx: 300,
+    lineHeight: theme.type.lineHeight.heading,
+  });
+
   return (
     <SlideFrame
       theme={theme}
@@ -41,7 +51,7 @@ export default function SectionDivider({
             {slide.eyebrow}
           </p>
         ) : null}
-        <Headline size="h1" as="h2">
+        <Headline size="h1" as="h2" fontSize={headlineSize}>
           {slide.headline}
         </Headline>
         <div

@@ -7,6 +7,7 @@ import { AccountMenu, BackToDecks } from "@/components/shared/AppHeader";
 import { useDeck } from "@/store/deckStore";
 import { useSaveStore, type SaveStatus } from "@/store/saveStore";
 import ShareDialog from "./ShareDialog";
+import ThemePicker from "./ThemePicker";
 import type { Deck } from "@/lib/types";
 
 /** Top bar: deck title, save status, undo/redo, export/import, present, user menu. */
@@ -18,6 +19,8 @@ export default function TopBar({ deckId, userEmail }: { deckId: string; userEmai
   const replaceDeck = useDeck((s) => s.replaceDeck);
   const canUndo = useDeck((s) => s.past.length > 0);
   const canRedo = useDeck((s) => s.future.length > 0);
+  const deckTheme = useDeck((s) => s.deck.theme);
+  const setTheme = useDeck((s) => s.setTheme);
   const status = useSaveStore((s) => s.status);
   const fileRef = useRef<HTMLInputElement>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -69,6 +72,7 @@ export default function TopBar({ deckId, userEmail }: { deckId: string; userEmai
       </div>
 
       <div className="flex items-center gap-1.5">
+        <ThemePicker value={deckTheme} onChange={setTheme} />
         <div className="flex items-center gap-0.5 rounded-lg bg-slate-100 p-0.5">
           <button
             onClick={undo}

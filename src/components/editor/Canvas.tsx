@@ -8,6 +8,8 @@ import CanvasObject from "./canvas/CanvasObject";
 import ResizeFrame from "./canvas/ResizeFrame";
 import ActionHost from "@/components/shared/ActionHost";
 import { backgroundStyle } from "@/components/shared/background";
+import { themeToSlideVars } from "@/lib/theming/deck-theme";
+import { resolveDeckTheme } from "@/lib/theming/themes";
 
 /** The 16:9 editing canvas: background, draggable objects, resize frame. */
 export default function Canvas() {
@@ -17,6 +19,8 @@ export default function Canvas() {
   const select = useDeck((s) => s.select);
   const updateObject = useDeck((s) => s.updateObject);
   const beginHistory = useDeck((s) => s.beginHistory);
+  const themePref = useDeck((s) => s.deck.theme);
+  const theme = resolveDeckTheme(themePref);
   const containerRef = useRef<HTMLDivElement>(null);
   const scaleRef = useRef(1);
   const [scale, setScale] = useState(1);
@@ -67,8 +71,14 @@ export default function Canvas() {
     >
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div
+          data-theme={theme.id}
           className="relative overflow-hidden rounded-md shadow-slide ring-1 ring-slate-900/5"
-          style={{ width: CANVAS_W * scale, height: CANVAS_H * scale, ...backgroundStyle(slide) }}
+          style={{
+            width: CANVAS_W * scale,
+            height: CANVAS_H * scale,
+            ...backgroundStyle(slide),
+            ...themeToSlideVars(theme),
+          }}
           onPointerDown={(e) => {
             if (e.target === e.currentTarget) select(null);
           }}

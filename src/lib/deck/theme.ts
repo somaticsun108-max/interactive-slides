@@ -1,48 +1,44 @@
 import type { CSSProperties } from "react";
 
+import { themeToSlideVars } from "@/lib/theming/deck-theme";
+import {
+  DEFAULT_THEME_ID,
+  SHAPE,
+  TYPE_SCALE,
+  getThemeById,
+  resolveDeckTheme,
+} from "@/lib/theming/themes";
+
 /**
- * The brand kit (Phase 0.5 ships exactly one theme).
+ * The component-facing theme contract.
  *
- * Everything a layout component is allowed to use lives here: colors, the type
- * scale, spacing, radii. Components read *only* CSS custom properties
- * (`var(--slide-ink)`, …) — never hardcoded colors or font-family strings — so
- * a future Brand Kit editor only has to change these values.
+ * Layout components read *only* CSS custom properties and the numbers in here
+ * (type sizes, spacing) — never a hardcoded colour or font stack. The values
+ * are derived from the token system in `@/lib/theming/themes`, which is the
+ * single source of truth (and what `test/theming/contrast.test.ts` checks).
+ * This interface exists so layouts do not have to know about token internals;
+ * `themeToCssVars` is the one place the two vocabularies meet.
  */
 export interface Theme {
   id: string;
   name: string;
   colors: {
-    /** Slide background. */
     paper: string;
-    /** Raised surface (cards, step pills). */
     surface: string;
-    /** Primary text. */
     ink: string;
-    /** Secondary text. */
     inkMuted: string;
-    /** Rules, hairlines, dividers. */
     line: string;
-    /** Brand accent. */
     accent: string;
-    /** Text placed on the accent. */
     accentInk: string;
-    /** Tinted accent wash for backgrounds. */
     accentWash: string;
-    /** Divider slide background (dark, high contrast for section breaks). */
     dividerPaper: string;
-    /** Text on divider slides. */
     dividerInk: string;
-    /** Muted text on divider slides. */
     dividerInkMuted: string;
   };
-  /** CSS font stack. Set from next/font so the file is self-hosted. */
-  fonts: {
-    sans: string;
-  };
-  /** Type scale in px, designed against the 1280x720 slide canvas. */
+  fonts: { sans: string };
+  /** Type scale in px, authored against the 1280x720 canvas. */
   type: {
     display: number;
-    /** Oversized section numeral on divider slides. */
     numeral: number;
     h1: number;
     h2: number;
@@ -52,119 +48,80 @@ export interface Theme {
     eyebrow: number;
     lineHeight: { display: number; heading: number; body: number };
   };
-  /** Spacing scale in px. */
-  space: {
-    xs: number;
-    sm: number;
-    md: number;
-    lg: number;
-    xl: number;
-    xxl: number;
-    /** Slide edge padding. */
-    frame: number;
-  };
-  radius: {
-    sm: number;
-    md: number;
-    lg: number;
-    pill: number;
-  };
+  space: { xs: number; sm: number; md: number; lg: number; xl: number; xxl: number; frame: number };
+  radius: { sm: number; md: number; lg: number; pill: number };
 }
-
-/**
- * The default brand kit: warm paper, near-black ink, one vermilion accent.
- * Chosen for screen recording — high contrast at video compression, no
- * background pattern noise behind text.
- */
-export const defaultTheme: Theme = {
-  id: "brand.default",
-  name: "Paper & Ink",
-  colors: {
-    paper: "#FBFAF7",
-    surface: "#FFFFFF",
-    ink: "#17181C",
-    inkMuted: "#5E6472",
-    line: "#E2DED5",
-    accent: "#C6401E",
-    accentInk: "#FFFFFF",
-    accentWash: "#F7E9E2",
-    dividerPaper: "#17181C",
-    dividerInk: "#FBFAF7",
-    dividerInkMuted: "#A9A49B",
-  },
-  fonts: {
-    sans: "var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-  },
-  type: {
-    display: 88,
-    numeral: 220,
-    h1: 60,
-    h2: 46,
-    h3: 34,
-    body: 26,
-    small: 20,
-    eyebrow: 17,
-    lineHeight: { display: 1.04, heading: 1.12, body: 1.5 },
-  },
-  space: { xs: 8, sm: 16, md: 26, lg: 40, xl: 64, xxl: 96, frame: 88 },
-  radius: { sm: 8, md: 14, lg: 24, pill: 999 },
-};
 
 /** Slide canvas. Layouts are authored against this and scaled to fit. */
 export const SLIDE_W = 1280;
 export const SLIDE_H = 720;
 
-const px = (n: number) => `${n}px`;
-
-/** Flatten a theme into the CSS custom properties layouts consume. */
-export function themeToCssVars(theme: Theme): CSSProperties {
-  return {
-    "--slide-paper": theme.colors.paper,
-    "--slide-surface": theme.colors.surface,
-    "--slide-ink": theme.colors.ink,
-    "--slide-ink-muted": theme.colors.inkMuted,
-    "--slide-line": theme.colors.line,
-    "--slide-accent": theme.colors.accent,
-    "--slide-accent-ink": theme.colors.accentInk,
-    "--slide-accent-wash": theme.colors.accentWash,
-    "--slide-divider-paper": theme.colors.dividerPaper,
-    "--slide-divider-ink": theme.colors.dividerInk,
-    "--slide-divider-ink-muted": theme.colors.dividerInkMuted,
-
-    "--slide-font-sans": theme.fonts.sans,
-
-    "--slide-type-display": px(theme.type.display),
-    "--slide-type-numeral": px(theme.type.numeral),
-    "--slide-type-h1": px(theme.type.h1),
-    "--slide-type-h2": px(theme.type.h2),
-    "--slide-type-h3": px(theme.type.h3),
-    "--slide-type-body": px(theme.type.body),
-    "--slide-type-small": px(theme.type.small),
-    "--slide-type-eyebrow": px(theme.type.eyebrow),
-    "--slide-lh-display": String(theme.type.lineHeight.display),
-    "--slide-lh-heading": String(theme.type.lineHeight.heading),
-    "--slide-lh-body": String(theme.type.lineHeight.body),
-
-    "--slide-space-xs": px(theme.space.xs),
-    "--slide-space-sm": px(theme.space.sm),
-    "--slide-space-md": px(theme.space.md),
-    "--slide-space-lg": px(theme.space.lg),
-    "--slide-space-xl": px(theme.space.xl),
-    "--slide-space-xxl": px(theme.space.xxl),
-    "--slide-space-frame": px(theme.space.frame),
-
-    "--slide-radius-sm": px(theme.radius.sm),
-    "--slide-radius-md": px(theme.radius.md),
-    "--slide-radius-lg": px(theme.radius.lg),
-    "--slide-radius-pill": px(theme.radius.pill),
-  } as CSSProperties;
-}
+const FONT_SANS =
+  "var(--font-inter), Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 /**
- * Resolve a theme by id. Single theme in 0.5; the signature is already the one
- * the Brand Kit editor will need.
+ * Build the component contract from a deck's theme preference.
+ *
+ * Colours come from the token system; only sizes are literal, because layouts
+ * need numbers for text fitting (`fitFontSize`) but colours must stay dynamic.
  */
-export function getTheme(id?: string | null): Theme {
-  if (!id || id === defaultTheme.id) return defaultTheme;
-  return defaultTheme;
+export function getTheme(
+  pref?: string | { themeId?: string | null; faithful?: boolean; background?: string | null } | null
+): Theme {
+  const options = typeof pref === "string" ? { themeId: pref } : (pref ?? {});
+  const resolved = resolveDeckTheme(options);
+  const accent = resolved.accents[0];
+  const last = resolved.accents[resolved.accents.length - 1];
+
+  return {
+    id: resolved.id,
+    name: resolved.name,
+    colors: {
+      paper: resolved.bg,
+      surface: "#FFFFFF",
+      ink: resolved.ink,
+      inkMuted: resolved.inkMuted,
+      line: accent.line,
+      accent: accent.fill,
+      accentInk: accent.text,
+      accentWash: resolved.accents[2]?.fill ?? accent.fill,
+      dividerPaper: resolved.root ?? last.fill,
+      dividerInk: resolved.rootText,
+      dividerInkMuted: resolved.rootText,
+    },
+    fonts: { sans: FONT_SANS },
+    type: {
+      display: TYPE_SCALE.title,
+      numeral: TYPE_SCALE.title * 4,
+      h1: TYPE_SCALE.title,
+      h2: TYPE_SCALE.section,
+      h3: TYPE_SCALE.section,
+      body: TYPE_SCALE.body,
+      small: TYPE_SCALE.min,
+      eyebrow: TYPE_SCALE.min,
+      lineHeight: { display: 1.04, heading: 1.12, body: 1.5 },
+    },
+    space: { xs: 8, sm: 16, md: 26, lg: 40, xl: 64, xxl: 96, frame: 88 },
+    radius: {
+      sm: 8,
+      md: SHAPE.radiusEm * 10,
+      lg: SHAPE.radiusEm * 16,
+      // Deliberately not a pill: the spec requires a rounded rectangle.
+      pill: SHAPE.radiusEm * 10,
+    },
+  };
+}
+
+/** The default brand kit (terracotta, legible mode). */
+export const defaultTheme: Theme = getTheme(DEFAULT_THEME_ID);
+
+/**
+ * Flatten a theme into the CSS custom properties layouts consume.
+ *
+ * Emits both the canonical tokens (`--bg`, `--accent-N`) and the `--slide-*`
+ * names the layouts use today, so a component can migrate one variable at a
+ * time without a big-bang rename.
+ */
+export function themeToCssVars(theme: Theme): CSSProperties {
+  return themeToSlideVars(getThemeById(theme.id));
 }

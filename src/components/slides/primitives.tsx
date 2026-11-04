@@ -88,22 +88,27 @@ export function Headline({
   children,
   size = "h1",
   as: Tag = "h1",
+  /** Optional px override, used by layouts that fit long headings. */
+  fontSize,
 }: {
   children: React.ReactNode;
   size?: "display" | "h1" | "h2" | "h3";
   as?: "h1" | "h2" | "h3";
+  fontSize?: number;
 }) {
   return (
     <Tag
       data-testid="slide-headline"
       style={{
-        fontSize: `var(--slide-type-${size})`,
+        fontSize: fontSize ?? `var(--slide-type-${size})`,
         lineHeight: size === "display" ? "var(--slide-lh-display)" : "var(--slide-lh-heading)",
         letterSpacing: size === "display" ? "-0.03em" : "-0.02em",
         fontWeight: 700,
         color: "inherit",
         margin: 0,
         textWrap: "balance",
+        overflowWrap: "break-word",
+        hyphens: "auto",
       }}
     >
       {children}

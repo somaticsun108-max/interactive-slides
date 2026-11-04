@@ -27,7 +27,10 @@ export default function AudienceView({ deckId }: { deckId: string }) {
 
   const onMessage = useCallback((message: AudienceMessage) => {
     switch (message.type) {
+      case "state":
       case "slide-change":
+        // `state` is a full snapshot (handshake / reseed); `slide-change` is a
+        // live update. Both carry everything needed to render.
         setSlide(message.slide);
         setTotal(message.total);
         setIndex(message.slideIndex);
@@ -74,10 +77,15 @@ export default function AudienceView({ deckId }: { deckId: string }) {
           </span>
         </>
       ) : (
-        <div className="text-center text-sm text-white/45">
+        <div className="max-w-md px-6 text-center text-sm text-white/45">
           <p className="font-medium text-white/70">Waiting for the presenter…</p>
           <p className="mt-1 text-xs">
             {connected ? "Connected" : "Keep this window open and press Present in the presenter window."}
+          </p>
+          <p className="mt-3 text-[11px] leading-relaxed text-white/30">
+            The presenter window drives this one over a same-browser channel. If this stays blank, open the audience
+            window from the presenter window&apos;s <span className="text-white/50">Audience</span> button — a window
+            opened manually in a different browser profile cannot connect.
           </p>
         </div>
       )}

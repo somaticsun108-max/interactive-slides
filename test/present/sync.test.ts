@@ -115,7 +115,7 @@ describe("parseMessage", () => {
       { ...base, type: "slide-change", slideIndex: 0, total: 3, stepIndex: 0, slide: slidePayload },
       { ...base, type: "slide-change", slideIndex: 1, stepIndex: 2, total: 3, slide: slidePayload },
       { ...base, type: "session-end", slideIndex: 2 },
-      { ...base, type: "hello" },
+      { ...base, type: "hello", since: 0 },
     ];
     for (const message of messages) {
       expect(parseMessage(message, deckId)).toEqual(message);

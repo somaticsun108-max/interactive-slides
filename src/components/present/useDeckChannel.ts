@@ -22,6 +22,7 @@ function supportsBroadcastChannel(): boolean {
  * so changing it never tears down and recreates the channel.
  */
 export function useAudienceChannel(deckId: string, onMessage: (message: AudienceMessage) => void): void {
+  const lastSeqRef = useRef(0);
   const handler = useRef(onMessage);
   handler.current = onMessage;
 
@@ -31,13 +32,25 @@ export function useAudienceChannel(deckId: string, onMessage: (message: Audience
 
     const listener = (event: MessageEvent) => {
       const message = parseMessage(event.data, deckId);
-      if (message) handler.current(message);
+      if (!message) return;
+      // Ignore anything older than what we already show (out-of-order delivery).
+      const seq = "seq" in message ? message.seq : undefined;
+      if (seq !== undefined) {
+        if (seq <= lastSeqRef.current) return;
+        lastSeqRef.current = seq;
+      }
+      handler.current(message);
     };
 
     channel.addEventListener("message", listener);
-    // Announce ourselves: the presenter replies with the current slide, which is
-    // what makes reopening (or reloading) the audience window mid-talk work.
-    channel.postMessage({ v: SYNC_VERSION, deckId, type: "hello" } satisfies AudienceMessage);
+    // Announce ourselves with the last update we hold (`since`), so the presenter
+    // replies with a full state snapshot only when we are behind or fresh.
+    channel.postMessage({
+      v: SYNC_VERSION,
+      deckId,
+      type: "hello",
+      since: lastSeqRef.current,
+    } satisfies AudienceMessage);
 
     return () => {
       channel.removeEventListener("message", listener);

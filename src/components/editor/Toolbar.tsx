@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ArrowRight, Circle, Image as ImageIcon, Smile, Square, Type, MousePointerClick } from "lucide-react";
 import { useDeck } from "@/store/deckStore";
 import EmojiPicker, { type PickerResult } from "./EmojiPicker";
+import { accentFor, resolveDeckTheme, SHAPE, TYPE_SCALE } from "@/lib/theming/themes";
 
 /** Add-object toolbar above the canvas. */
 export default function Toolbar() {
@@ -11,6 +12,19 @@ export default function Toolbar() {
   const [shapeOpen, setShapeOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const cascade = useRef(0);
+  const themePref = useDeck((s) => s.deck.theme);
+  const theme = resolveDeckTheme(themePref);
+
+  /**
+   * New objects inherit the deck's theme: accent rotation for fills, the
+   * theme's ink for text, and the spec's radius (a rounded rect, never a pill).
+   * Adding an object twice alternates accents when the deck asks for it.
+   */
+  function nextAccent() {
+    const index = useDeck.getState().deck.slides
+      .find((s) => s.id === useDeck.getState().currentSlideId)?.objects.length ?? 0;
+    return accentFor(theme, index, theme.accentMode);
+  }
 
   function offset() {
     cascade.current = (cascade.current + 1) % 8;
@@ -26,7 +40,13 @@ export default function Toolbar() {
       w: 360,
       h: 80,
       action: { type: "none" },
-      text: { content: "New text", fontSize: 40, color: "#0f172a", fontWeight: 400, align: "left" },
+      text: {
+        content: "New text",
+        fontSize: TYPE_SCALE.body,
+        color: theme.ink,
+        fontWeight: 400,
+        align: "left",
+      },
     });
   }
 
@@ -52,7 +72,13 @@ export default function Toolbar() {
       w: 280,
       h: 64,
       action: { type: "none" },
-      button: { label: "Click me", fill: "#4f46e5", textColor: "#ffffff", fontSize: 24, radius: 12 },
+      button: {
+        label: "Click me",
+        fill: nextAccent().fill,
+        textColor: nextAccent().text,
+        fontSize: TYPE_SCALE.body,
+        radius: Math.round(TYPE_SCALE.body * SHAPE.radiusEm),
+      },
     });
   }
 
@@ -65,7 +91,13 @@ export default function Toolbar() {
       w: kind === "arrow" ? 220 : 180,
       h: kind === "arrow" ? 100 : 180,
       action: { type: "none" },
-      shape: { shape: kind, fill: "#6366f1", stroke: "#1e293b", strokeWidth: 0, radius: kind === "rect" ? 8 : 0 },
+      shape: {
+        shape: kind,
+        fill: nextAccent().fill,
+        stroke: nextAccent().line,
+        strokeWidth: 0,
+        radius: kind === "rect" ? Math.round(TYPE_SCALE.body * SHAPE.radiusEm) : 0,
+      },
     });
     setShapeOpen(false);
   }

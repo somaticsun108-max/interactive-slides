@@ -2,6 +2,10 @@ import type { CSSProperties } from "react";
 import type { SlideView } from "@/lib/deck/slide-types";
 import type { Theme } from "@/lib/deck/theme";
 import { Eyebrow, Headline, SlideFrame, framePadding } from "./primitives";
+import { BODY_HEIGHT, BODY_WIDTH, fitFontSize, fitStepsFontSize } from "./fit";
+
+/** Steps never render below this, even when the list has to be clamped. */
+const MIN_STEP_PX = 20;
 
 /**
  * `content.steps` — a headline plus one revealed step per On-screen line.
@@ -24,6 +28,19 @@ export default function ContentSteps({
 }) {
   const steps = slide.body;
   const visible = visibleSteps === undefined ? steps.length : Math.max(0, Math.min(visibleSteps, steps.length));
+
+  // Fit the whole list (not just the revealed steps) so revealing a step never
+  // reflows the headline or shifts earlier items.
+  const stepFontSize = steps.length
+    ? fitStepsFontSize({
+        steps,
+        maxFontSize: theme.type.body,
+        minFontSize: MIN_STEP_PX,
+        widthPx: BODY_WIDTH,
+        availableHeightPx: BODY_HEIGHT,
+        gapPx: theme.space.sm,
+      })
+    : theme.type.body;
 
   return (
     <SlideFrame theme={theme} scale={scale}>
@@ -53,10 +70,12 @@ export default function ContentSteps({
                     gridTemplateColumns: "auto 1fr",
                     alignItems: "start",
                     gap: "var(--slide-space-md)",
-                    fontSize: "var(--slide-type-body)",
+                    fontSize: stepFontSize,
                     lineHeight: "var(--slide-lh-body)",
                     color: "var(--slide-ink)",
                     opacity: revealed ? 1 : 0,
+                    overflowWrap: "break-word",
+                    hyphens: "auto",
                     transform: revealed ? "translateY(0)" : "translateY(6px)",
                     transition: "opacity 180ms ease, transform 180ms ease",
                   }}
@@ -66,21 +85,21 @@ export default function ContentSteps({
                     style={{
                       display: "grid",
                       placeItems: "center",
-                      width: 40,
-                      height: 40,
+                      width: "1.45em",
+                      height: "1.45em",
                       flex: "none",
                       borderRadius: "var(--slide-radius-pill)",
                       background: revealed ? "var(--slide-accent-wash)" : "transparent",
                       border: "1px solid var(--slide-line)",
                       color: "var(--slide-accent)",
-                      fontSize: "var(--slide-type-small)",
+                      fontSize: "0.72em",
                       fontWeight: 700,
                       fontVariantNumeric: "tabular-nums",
                     }}
                   >
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <span style={{ paddingTop: 4 }}>{step}</span>
+                  <span style={{ paddingTop: 4, minWidth: 0 }}>{step}</span>
                 </li>
               );
             })}

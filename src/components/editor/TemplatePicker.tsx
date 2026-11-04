@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { TEMPLATES } from "@/lib/templates";
+import { TEMPLATES, makeTemplateSlides } from "@/lib/templates";
 import { useDeck } from "@/store/deckStore";
 
 /** "Add slide from template" modal. Pass onPick to use it as a generic template chooser. */
@@ -13,12 +13,15 @@ export default function TemplatePicker({
   onPick?: (templateId: string) => void;
 }) {
   const addSlide = useDeck((s) => s.addSlide);
+  const deckTheme = useDeck((s) => s.deck.theme);
 
   function pick(templateId: string) {
     if (onPick) onPick(templateId);
     else {
-      const t = TEMPLATES.find((x) => x.id === templateId);
-      if (t) addSlide(t.make());
+      // Multi-slide patterns (poll + results, branching scenario) add every
+      // slide they consist of, coloured for the deck's current theme.
+      const slides = makeTemplateSlides(templateId, deckTheme);
+      for (const slide of slides) addSlide(slide);
     }
     onClose();
   }
@@ -56,8 +59,15 @@ export default function TemplatePicker({
               onClick={() => pick(t.id)}
               className="group flex flex-col rounded-xl border border-slate-200 bg-white p-3 text-left transition duration-150 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-card"
             >
-              <div className="mb-2.5 grid h-11 w-11 place-items-center rounded-lg bg-slate-50 text-2xl ring-1 ring-inset ring-slate-900/5 transition group-hover:bg-indigo-50">
-                {t.preview}
+              <div className="mb-2.5 flex items-center gap-2">
+                <div className="grid h-11 w-11 place-items-center rounded-lg bg-slate-50 text-2xl ring-1 ring-inset ring-slate-900/5 transition group-hover:bg-indigo-50">
+                  {t.preview}
+                </div>
+                {t.slideCount && t.slideCount > 1 ? (
+                  <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
+                    {t.slideCount} slides
+                  </span>
+                ) : null}
               </div>
               <div className="text-[13px] font-semibold tracking-[-0.01em] text-slate-800 group-hover:text-indigo-700">
                 {t.name}

@@ -1,6 +1,10 @@
 import type { SlideView } from "@/lib/deck/slide-types";
 import type { Theme } from "@/lib/deck/theme";
 import { Eyebrow, Headline, SlideFrame, framePadding } from "./primitives";
+import { BODY_HEIGHT, BODY_WIDTH, fitFontSize } from "./fit";
+
+/** Body text never renders below this, even if it has to be clamped. */
+const MIN_BODY_PX = 20;
 
 export type ContentMessageVariant = "default" | "cta";
 
@@ -24,6 +28,18 @@ export default function ContentMessage({
 }) {
   const isCta = variant === "cta";
   const body = slide.body[0];
+
+  // Scale the body down so long lines wrap inside the slide instead of
+  // overflowing past the bottom edge. The cap is the theme's body size.
+  const bodyFontSize = body
+    ? fitFontSize({
+        text: body,
+        maxFontSize: theme.type.body,
+        minFontSize: MIN_BODY_PX,
+        widthPx: 900,
+        availableHeightPx: BODY_HEIGHT,
+      })
+    : theme.type.body;
 
   return (
     <SlideFrame theme={theme} scale={scale}>
@@ -50,6 +66,7 @@ export default function ContentMessage({
                 fontSize: "var(--slide-type-h3)",
                 fontWeight: 600,
                 maxWidth: 960,
+                overflowWrap: "break-word",
               }}
             >
               <span aria-hidden style={{ fontSize: "0.9em", opacity: 0.75 }}>
@@ -63,10 +80,13 @@ export default function ContentMessage({
               style={{
                 marginTop: "var(--slide-space-lg)",
                 marginBottom: 0,
+                width: "100%",
                 maxWidth: 900,
-                fontSize: "var(--slide-type-body)",
+                fontSize: bodyFontSize,
                 lineHeight: "var(--slide-lh-body)",
                 color: "var(--slide-ink-muted)",
+                overflowWrap: "break-word",
+                hyphens: "auto",
               }}
             >
               {body}

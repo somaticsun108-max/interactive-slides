@@ -49,7 +49,19 @@ export type AudienceMessage =
       slide: AudienceSlide;
     }
   | { v: typeof SYNC_VERSION; deckId: string; type: "session-end"; slideIndex: number }
-  | { v: typeof SYNC_VERSION; deckId: string; type: "hello" };
+  /** Audience announces itself; `since` is the last update it received (0 = fresh). */
+  | { v: typeof SYNC_VERSION; deckId: string; type: "hello"; since?: number }
+  /** Presenter's answer: the slide that must be on screen, with a sequence number. */
+  | {
+      v: typeof SYNC_VERSION;
+      deckId: string;
+      type: "state";
+      slideIndex: number;
+      stepIndex: number;
+      total: number;
+      slide: AudienceSlide;
+      seq: number;
+    };
 
 /** Presenter-side state derived from arrow keys / clickers. */
 export interface PresenterPosition {
@@ -156,9 +168,18 @@ export function parseMessage(raw: unknown, deckId: string): AudienceMessage | nu
       if (!isInt(m.slideIndex)) return null;
       return m;
     }
-    case "hello":
-      // The audience does not know the deck size; the presenter answers with it.
-      return msg as Extract<AudienceMessage, { type: "hello" }>;
+    case "hello": {
+      const m = msg as Extract<AudienceMessage, { type: "hello" }>;
+      if (m.since !== undefined && !isInt(m.since)) return null;
+      return m;
+    }
+    case "state": {
+      const m = msg as Extract<AudienceMessage, { type: "state" }>;
+      if (!isInt(m.slideIndex) || !isInt(m.stepIndex) || !isInt(m.seq)) return null;
+      if (!m.slide || typeof m.slide.headline !== "string" || !Array.isArray(m.slide.body)) return null;
+      if ("notes" in m.slide || "narration" in m.slide) return null;
+      return m;
+    }
     default:
       return null;
   }
