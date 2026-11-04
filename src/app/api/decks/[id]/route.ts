@@ -4,7 +4,8 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { decks } from "@/lib/db/schema";
 import { requireUser } from "@/lib/session";
-import { parseDeckData, slugifyTitle } from "@/lib/deck-schema";
+import { normalizeDeck, parseDeckData, slugifyTitle } from "@/lib/deck-schema";
+import type { Deck } from "@/lib/types";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -24,7 +25,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   const row = await ownedDeck(id, user.id);
   if (!row) return NextResponse.json({ error: "Deck not found" }, { status: 404 });
-  return NextResponse.json({ deck: row.data, isPublic: row.isPublic, shareSlug: row.shareSlug });
+  return NextResponse.json({ deck: normalizeDeck(row.data as Deck), isPublic: row.isPublic, shareSlug: row.shareSlug });
 }
 
 const patchSchema = z.object({

@@ -36,7 +36,7 @@ export const useRunner = create<RunnerState>()((set, get) => ({
   expandedId: null,
 
   run: (obj, ctx) => {
-    const a = obj.action;
+    const a = obj.action ?? { type: "none" as const };
     if (a.type === "none") return;
     if (a.type === "popup") {
       const n = get().popups.length;

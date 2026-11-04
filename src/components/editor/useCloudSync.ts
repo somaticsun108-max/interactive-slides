@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useDeck } from "@/store/deckStore";
 import { useSaveStore } from "@/store/saveStore";
 import { loadDeckCache, saveDeckCache } from "@/lib/deck-cache";
+import { normalizeDeck } from "@/lib/deck-schema";
 import type { Deck } from "@/lib/types";
 
 /**
@@ -41,7 +42,7 @@ export function useCloudSync(deckId: string, initialError: string | null = null)
         const cached = loadDeckCache(deckId);
         if (cached) {
           const st = useDeck.getState();
-          st.replaceDeck(cached);
+          st.replaceDeck(normalizeDeck(cached));
           st.setCurrentSlide(cached.slides[0].id);
           readyRef.current = true;
           setSave({ status: "error", error: "Offline - showing the last cached copy. Changes will not upload until the connection returns." });

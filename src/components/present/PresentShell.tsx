@@ -168,7 +168,7 @@ export default function PresentShell({
 }
 
 function PresentObject({ obj, expanded, onClick }: { obj: SlideObject; expanded: boolean; onClick: () => void }) {
-  const interactive = obj.action.type !== "none";
+  const interactive = (obj.action?.type ?? "none") !== "none";
   return (
     <div
       onClick={interactive ? onClick : undefined}

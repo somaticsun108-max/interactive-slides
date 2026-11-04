@@ -1,20 +1,25 @@
 import { z } from "zod";
-import type { Deck } from "@/lib/types";
+import type { Action, Deck, SlideObject } from "@/lib/types";
 
 /**
  * Runtime validation for a stored Deck JSON (structural sanity check -
  * ids present, arrays bounded). The full object shape is enforced by the
  * editor itself; here we cast to Deck after validation.
  */
-const objectSchema = z.object({
-  id: z.string().min(1).max(64),
-  type: z.enum(["text", "image", "clipart", "shape", "button"]),
-  x: z.number().finite(),
-  y: z.number().finite(),
-  w: z.number().finite(),
-  h: z.number().finite(),
-  z: z.number().finite(),
-});
+// .passthrough() is critical: undeclared keys (action, text, image, clipart,
+// shape, button) must survive validation. Without it zod strips them and
+// saved decks lose their content and interactivity (obj.action.type crashes).
+const objectSchema = z
+  .object({
+    id: z.string().min(1).max(64),
+    type: z.enum(["text", "image", "clipart", "shape", "button"]),
+    x: z.number().finite(),
+    y: z.number().finite(),
+    w: z.number().finite(),
+    h: z.number().finite(),
+    z: z.number().finite(),
+  })
+  .passthrough();
 
 export const deckDataSchema = z.object({
   version: z.literal(1),
@@ -41,11 +46,29 @@ export const deckDataSchema = z.object({
     .max(100),
 });
 
+/**
+ * Fill in defaults the editor expects but stored payloads may lack. Decks
+ * saved while validation stripped unknown fields lost their `action`; this
+ * heals them on read. Purely additive - it never rejects a deck.
+ */
+export function normalizeDeck(deck: Deck): Deck {
+  return {
+    ...deck,
+    slides: deck.slides.map((slide) => ({
+      ...slide,
+      objects: slide.objects.map((obj) => ({
+        ...obj,
+        action: (obj as SlideObject & { action?: Action }).action ?? { type: "none" },
+      })),
+    })),
+  };
+}
+
 /** Validate + normalize a Deck payload; null when it is not a usable deck. */
 export function parseDeckData(input: unknown): Deck | null {
   const parsed = deckDataSchema.safeParse(input);
   if (!parsed.success) return null;
-  return parsed.data as unknown as Deck;
+  return normalizeDeck(parsed.data as unknown as Deck);
 }
 
 export function slugifyTitle(title: string): string {

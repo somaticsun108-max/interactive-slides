@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { decks } from "@/lib/db/schema";
 import { requireUser } from "@/lib/session";
+import { normalizeDeck } from "@/lib/deck-schema";
 import PresentShell from "@/components/present/PresentShell";
 import type { Deck } from "@/lib/types";
 
@@ -21,7 +22,7 @@ export default async function PresentPage({ searchParams }: { searchParams: Prom
       .from(decks)
       .where(and(eq(decks.id, deckId), eq(decks.ownerId, user.id)))
       .limit(1);
-    deck = rows[0]?.data ?? null;
+    deck = rows[0]?.data ? normalizeDeck(rows[0].data as Deck) : null;
   }
 
   if (!deck) {

@@ -23,7 +23,7 @@ export default function CanvasObject({
   const setEditing = useDeck((s) => s.setEditing);
   const updateObject = useDeck((s) => s.updateObject);
   const expanded = useRunner((s) => s.expandedId === obj.id);
-  const hasExpand = obj.action.type === "expand";
+  const hasExpand = obj.action?.type === "expand";
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: obj.id,
     disabled: editing,
