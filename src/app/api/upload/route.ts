@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { requireUser } from "@/lib/session";
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
-const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+import { MAX_UPLOAD_BYTES, validateImageFile } from "@/lib/upload-limits";
+
 const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif" };
 
 /**
@@ -25,11 +25,14 @@ export async function POST(req: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "No file was sent." }, { status: 400 });
   }
-  if (!ALLOWED.has(file.type)) {
-    return NextResponse.json({ error: "Only PNG, JPG, WebP or GIF images are allowed." }, { status: 415 });
-  }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "Image is too large (max 5 MB)." }, { status: 413 });
+  // Kept below Vercel's 4.5 MB function-body cap so the request always reaches
+  // this handler and the user gets a message instead of a platform 413.
+  const problem = validateImageFile(file);
+  if (problem) {
+    return NextResponse.json(
+      { error: problem },
+      { status: file.size > MAX_UPLOAD_BYTES ? 413 : 415 }
+    );
   }
 
   try {
