@@ -44,6 +44,16 @@ export function themeToSlideVars(theme: Theme): CSSProperties {
     // Layout variables (what the slide components consume).
     "--slide-paper": theme.bg,
     "--slide-surface": "#FFFFFF",
+    // Second and third accents, so layouts can differentiate steps and cards
+    // instead of every slide being one flat accent.
+    "--slide-accent-2": theme.accents[1]?.fill ?? firstAccent.fill,
+    "--slide-accent-2-ink": theme.accents[1]?.text ?? firstAccent.text,
+    "--slide-accent-3": theme.accents[2]?.fill ?? firstAccent.fill,
+    "--slide-accent-3-ink": theme.accents[2]?.text ?? firstAccent.text,
+    "--slide-accent-line": firstAccent.line,
+    // A wash of the palette for panels and cards: the accent mixed into the
+    // paper, so it belongs to the theme rather than being a fixed grey.
+    "--slide-accent-wash-soft": theme.accents[3]?.fill ?? theme.accents[0].fill,
     "--slide-ink": theme.ink,
     "--slide-ink-muted": theme.inkMuted,
     "--slide-line": firstAccent.line,

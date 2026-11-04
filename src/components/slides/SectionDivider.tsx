@@ -1,6 +1,6 @@
 import type { SlideView } from "@/lib/deck/slide-types";
 import type { Theme } from "@/lib/deck/theme";
-import { Headline, SlideFrame, framePadding } from "./primitives";
+import { AccentShapes, Headline, SlideFrame, framePadding } from "./primitives";
 import { fitFontSize } from "./fit";
 
 /**
@@ -31,6 +31,7 @@ export default function SectionDivider({
       scale={scale}
       style={{ background: "var(--slide-divider-paper)", color: "var(--slide-divider-ink)" }}
     >
+      <AccentShapes variant="grid" opacity={0.16} accent="var(--slide-accent)" accent2="var(--slide-accent-2)" />
       <div className="relative flex h-full flex-col justify-center" style={framePadding}>
         {slide.eyebrow ? (
           <p

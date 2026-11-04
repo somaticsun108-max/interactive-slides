@@ -44,5 +44,8 @@ export default async function ScriptDeckPage({ params }: { params: Promise<{ id:
     );
   }
 
-  return <DeckViewer deck={row.deck} userEmail={user.email ?? ""} />;
+  // The row's UUID is the only id that resolves against `script_decks`; the
+  // deck stored inside carries a content hash (`dk_…`) instead. Stamp the UUID
+  // on so every client — audience popup, channel name, theme save — uses it.
+  return <DeckViewer deck={{ ...row.deck, id }} userEmail={user.email ?? ""} />;
 }

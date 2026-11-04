@@ -1,6 +1,6 @@
 import type { SlideView } from "@/lib/deck/slide-types";
 import type { Theme } from "@/lib/deck/theme";
-import { Eyebrow, Headline, SlideFrame, framePadding } from "./primitives";
+import { AccentShapes, Eyebrow, Headline, SlideFrame, framePadding } from "./primitives";
 import {
   BODY_HEIGHT,
   BODY_WIDTH,
@@ -77,6 +77,7 @@ export default function ContentMessage({
 
   return (
     <SlideFrame theme={theme} scale={scale}>
+      <AccentShapes variant={isCta ? "grid" : "corner"} opacity={isCta ? 0.14 : 0.09} />
       <div className="relative flex h-full flex-col justify-center" style={framePadding}>
         <Eyebrow>{slide.eyebrow}</Eyebrow>
         <Headline size={isCta ? "display" : "h1"} as="h2" fontSize={headlineSize}>

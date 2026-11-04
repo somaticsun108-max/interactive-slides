@@ -46,7 +46,7 @@
 }
 
 [data-theme="spectrum"] {
-  --bg: #FFFFFF;
+  --bg: #F8F6FE;
   --ink: #2D3748;
   --ink-muted: #2D3748;
   --root: #1F2733;
@@ -77,7 +77,7 @@
 }
 
 [data-theme="pastel"] {
-  --bg: #FFFFFF;
+  --bg: #FDF8F4;
   --ink: #2D3748;
   --ink-muted: #2D3748;
   --root: #2D3748;
@@ -88,7 +88,7 @@
   --accent-1-line: #D2605A;
   --accent-2: #F6C28B;
   --accent-2-text: #2D3748;
-  --accent-2-line: #CC8228;
+  --accent-2-line: #D77711;
   --accent-3: #F3E08A;
   --accent-3-text: #2D3748;
   --accent-3-line: #A68800;
@@ -136,7 +136,7 @@
 }
 
 [data-theme="vivid-video"] {
-  --bg: #FFFFFF;
+  --bg: #F5F8FF;
   --ink: #3F4245;
   --ink-muted: #727275;
   --root: #1F2733;
@@ -147,10 +147,10 @@
   --accent-1-line: #2E69FF;
   --accent-2: #BFA0F7;
   --accent-2-text: #3F4245;
-  --accent-2-line: #A67AF4;
+  --accent-2-line: #9F71F3;
   --accent-3: #FB8DB3;
   --accent-3-text: #3F4245;
-  --accent-3-line: #F95C92;
+  --accent-3-line: #F94885;
   --accent-4: #DF2E00;
   --accent-4-text: #FFFFFF;
   --accent-4-line: #DF2E00;

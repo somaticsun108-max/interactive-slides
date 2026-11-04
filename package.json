@@ -13,7 +13,8 @@
     "fonts:sync": "node scripts/download-inter-font.mjs",
     "preview:deck": "tsx --tsconfig tsconfig.json scripts/render-deck-preview.tsx",
     "themes:css": "tsx scripts/build-themes-css.ts",
-    "preview:themes": "tsx --tsconfig tsconfig.json scripts/render-theme-preview.tsx"
+    "preview:themes": "tsx --tsconfig tsconfig.json scripts/render-theme-preview.tsx",
+    "preview:editor": "tsx --tsconfig tsconfig.json scripts/render-editor-preview.tsx"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -31,5 +31,7 @@ export default async function ControlPage({ searchParams }: { searchParams: Prom
     );
   }
 
-  return <PresenterControl deck={row.deck} />;
+  // Same rule as the deck page: the channel name and any audience link must be
+  // built from the row id, never the content hash stored inside the deck.
+  return <PresenterControl deck={{ ...row.deck, id: deckId }} />;
 }

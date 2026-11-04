@@ -343,11 +343,15 @@ export function buildTheme(spec: ThemeSpec, opts: { forceWhiteText?: boolean } =
 
     if (pair.deltaL !== 0) adjustedFills.push({ from: fill, to: pair.fill });
 
+    // Lines are derived from the colour that actually ships. A pinned line is
+    // honoured, but only if it still clears 3:1 against this theme's paper —
+    // otherwise it is deepened, so a border can never disappear.
+    const pinned = explicitLine && contrastRatio(explicitLine, spec.bg) >= 3 ? explicitLine : null;
+
     return {
       fill: pair.fill,
       text: pair.text,
-      // Lines are derived from the colour that actually ships.
-      line: explicitLine ?? lineColorFor(pair.fill, spec.bg),
+      line: pinned ?? lineColorFor(pair.fill, spec.bg),
     };
   });
 
@@ -387,7 +391,9 @@ const TERRACOTTA_LEGIBLE: ThemeSpec = {
 const SPECTRUM: ThemeSpec = {
   id: "spectrum",
   name: "Spectrum",
-  bg: "#FFFFFF",
+  // A near-white violet paper: distinct from white so switching palette reads
+  // as a change, but light enough for the same ink to clear 4.5:1.
+  bg: "#F8F6FE",
   ink: "#2D3748",
   root: { fill: "#1F2733", text: WHITE },
   fills: ["#7B4FE0", "#D6336C", "#CD440E", "#F59F00", "#288639", "#1A76C7", "#0C7E92"],
@@ -398,7 +404,8 @@ const SPECTRUM: ThemeSpec = {
 const PASTEL: ThemeSpec = {
   id: "pastel",
   name: "Pastel",
-  bg: "#FFFFFF",
+  // Warm blush paper.
+  bg: "#FDF8F4",
   ink: "#2D3748",
   root: { fill: "#2D3748", text: WHITE },
   fills: ["#F4A6A0", "#F6C28B", "#F3E08A", "#B5D99C", "#9CD3D0", "#A9C4EB", "#C9B6E4"],
@@ -422,7 +429,8 @@ const OCEAN: ThemeSpec = {
 const VIVID_VIDEO: ThemeSpec = {
   id: "vivid-video",
   name: "Vivid",
-  bg: "#FFFFFF",
+  // Cool, bright paper so the vivid fills sit on something other than white.
+  bg: "#F5F8FF",
   ink: "#3F4245",
   inkMuted: "#727275",
   root: { fill: "#1F2733", text: WHITE },
@@ -505,13 +513,96 @@ export const SHAPE = {
 
 export const SELECT_COLOR = "#12A8F0";
 
-/** Extra backgrounds a user can pick for any light theme. */
+/**
+ * Extra backgrounds a user can pick for any light theme. These are the three
+ * spec'd papers; theme-derived washes come from `themeBackgrounds`.
+ */
 export const BACKGROUNDS = [
   { id: "default", name: "Theme default", value: null },
   { id: "warm", name: "Warm", value: "#FAF6F1" },
   { id: "mist", name: "Mist", value: "#F3F6FA" },
   { id: "sage", name: "Sage", value: "#EEF3EC" },
 ] as const;
+
+/**
+ * A background that belongs to the chosen theme, rather than a fixed paper.
+ *
+ * Picking a theme should visibly change the deck — otherwise "themes" are just
+ * an accent colour you cannot see. A wash is the theme's own accent mixed into
+ * its background, so it is always the theme's colour and always light enough
+ * for body ink (verified in the contrast test).
+ */
+export interface ThemeBackground {
+  id: string;
+  name: string;
+  /** Solid colour, or a gradient when `to` is present. */
+  from: string;
+  to?: string;
+  angle?: number;
+  /** Which theme it was derived from. */
+  themeId: string;
+}
+
+/** The background a theme supplies when the deck has not picked one. */
+export function themeDefaultBackground(theme: Theme): { from: string; to?: string; angle?: number } {
+  return { from: theme.bg };
+}
+
+/**
+ * Background choices derived from a theme: its own paper, a soft wash of each
+ * of its first accents, and one deeper "statement" variant for title slides.
+ */
+export function themeBackgrounds(theme: Theme): ThemeBackground[] {
+  const accents = theme.accents.slice(0, 4);
+  const onDark = relativeLuminance(theme.bg) < 0.35;
+
+  const washes = accents.map((accent, index) => ({
+    id: `wash-${index + 1}`,
+    name: ["Accent wash", "Second wash", "Third wash", "Fourth wash"][index] ?? `Wash ${index + 1}`,
+    // Mixing toward the background keeps it light; toward the fill keeps it
+    // saturated. 14% is enough to read as a colour, not a stain.
+    from: onDark ? mix(theme.bg, accent.fill, 0.82) : mix(accent.fill, theme.bg, 0.14),
+    themeId: theme.id,
+  }));
+
+  const gradientFrom = onDark ? mix(theme.bg, accents[0]?.fill ?? theme.ink, 0.9) : theme.bg;
+  const gradientTo = mix(accents[0]?.fill ?? theme.ink, theme.bg, onDark ? 0.45 : 0.3);
+
+  return [
+    { id: "paper", name: "Theme paper", from: theme.bg, themeId: theme.id },
+    ...washes,
+    {
+      id: "gradient",
+      name: "Accent gradient",
+      from: gradientFrom,
+      to: gradientTo,
+      angle: 135,
+      themeId: theme.id,
+    },
+    {
+      id: "statement",
+      name: "Statement",
+      from: theme.root ?? theme.ink,
+      angle: 160,
+      themeId: theme.id,
+    },
+  ];
+}
+
+/** Resolve a stored background id against a theme (falls back to its paper). */
+export function resolveBackground(theme: Theme, id?: string | null): { from: string; to?: string; angle?: number } {
+  if (!id) return themeDefaultBackground(theme);
+
+  const fixed = BACKGROUNDS.find((b) => b.id === id);
+  if (fixed?.value) return { from: fixed.value };
+
+  const derived = themeBackgrounds(theme).find((b) => b.id === id);
+  if (derived) return { from: derived.from, to: derived.to, angle: derived.angle };
+
+  // A raw hex is allowed too (the API stores hex when someone picks an exact
+  // colour); anything else falls back rather than rendering nothing.
+  return /^#[0-9a-fA-F]{6}$/.test(id) ? { from: id } : themeDefaultBackground(theme);
+}
 
 /* ------------------------------------------------------------------ */
 /* CSS generation                                                      */
@@ -575,6 +666,8 @@ export function themesToCss(): string {
 export interface ResolvedTheme extends Theme {
   /** True when the deck asked for faithful mode. */
   faithful: boolean;
+  /** The slide surface: the chosen background resolved to colours. */
+  surface: { from: string; to?: string; angle?: number };
   /** Chosen accent rotation for new objects. */
   accentMode: AccentMode;
   /** Background override, if the deck picked one. */
@@ -600,14 +693,17 @@ export function resolveDeckTheme(pref?: {
   const base = getThemeById(pref?.themeId);
   const faithful = Boolean(pref?.faithful);
   const theme = faithful ? buildTheme(getSpec(base.id), { forceWhiteText: true }) : base;
+  // `background` is an id ("paper", "wash-2", "gradient") or a raw hex. It
+  // resolves through `resolveBackground`; it is NOT the theme's paper, and must
+  // never be assigned to `bg` (that turned a palette into "Not a hex colour").
   const backgroundOverride = pref?.background ?? null;
 
   return {
     ...theme,
-    ...(backgroundOverride ? { bg: backgroundOverride } : {}),
     faithful,
     accentMode: pref?.accentMode ?? base.defaultAccentMode ?? "single",
     backgroundOverride,
+    surface: resolveBackground(theme, backgroundOverride),
   };
 }
 
@@ -721,10 +817,10 @@ export function resolveTheme(pref?: {
     });
     return {
       ...theme,
-      ...(pref?.background ? { bg: pref.background } : {}),
       faithful: Boolean(pref?.faithful),
       accentMode: pref?.accentMode ?? theme.defaultAccentMode ?? "single",
       backgroundOverride: pref?.background ?? null,
+      surface: resolveBackground(theme, pref?.background),
     };
   }
   return resolveDeckTheme(pref);

@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Palette } from "lucide-react";
 import {
-  BACKGROUNDS,
   THEMES,
   customToTheme,
   getThemeById,
+  resolveTheme,
   swatchFor,
+  themeBackgrounds,
 } from "@/lib/theming/themes";
 import type { DeckTheme } from "@/lib/types";
 
@@ -115,14 +116,15 @@ export default function ThemePicker({
       >
         <Palette size={15} className="text-slate-500" />
         <span className="hidden sm:inline">{active.name}</span>
-        <span aria-hidden className="flex -space-x-1">
-          {swatchFor(active).map((colour, index) => (
-            <span
-              key={index}
-              className="h-2.5 w-2.5 rounded-full ring-1 ring-white"
-              style={{ background: colour }}
-            />
-          ))}
+        {/* A miniature of the deck itself: paper, accents, text tone. */}
+        <span
+          aria-hidden
+          className="flex h-4 w-6 items-center justify-center gap-[2px] rounded-[3px] ring-1 ring-inset ring-black/10"
+          style={{ background: active.bg }}
+        >
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: active.accents[0]?.fill }} />
+          <span className="h-1 w-1 rounded-full" style={{ background: active.accents[1]?.fill ?? active.ink }} />
+          <span className="h-[2px] w-1.5 rounded-full" style={{ background: active.ink }} />
         </span>
         <ChevronDown size={13} className="text-slate-400" />
       </button>
@@ -239,30 +241,29 @@ export default function ThemePicker({
 
           <div className="px-2.5 py-1">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Background</p>
+            {/* The chosen theme's own backgrounds, so picking a theme visibly
+                changes the deck instead of tinting one line. */}
             <div className="mt-1.5 flex flex-wrap gap-1.5" data-testid="background-swatches">
-              {BACKGROUNDS.map((bg) => {
-                const selected = (value?.background ?? null) === bg.value;
+              {themeBackgrounds(resolveTheme(value)).map((bg) => {
+                const selected = (value?.background ?? null) === bg.id;
                 return (
                   <button
                     key={bg.id}
                     type="button"
-                    onClick={() => onChange({ background: bg.value })}
+                    onClick={() => onChange({ background: bg.id })}
                     aria-pressed={selected}
                     title={bg.name}
+                    aria-label={`${bg.name} background`}
                     data-testid={`background-${bg.id}`}
-                    className={`flex h-6 items-center gap-1 rounded-md border px-1.5 text-[11px] transition ${
-                      selected
-                        ? "border-slate-900 bg-slate-900 text-white"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    className={`h-7 w-7 rounded-md ring-1 ring-inset transition hover:scale-105 ${
+                      selected ? "ring-2 ring-slate-900" : "ring-black/10"
                     }`}
-                  >
-                    <span
-                      aria-hidden
-                      className="h-2.5 w-2.5 rounded-sm ring-1 ring-inset ring-black/10"
-                      style={{ background: bg.value ?? active.bg }}
-                    />
-                    {bg.name}
-                  </button>
+                    style={{
+                      background: bg.to
+                        ? `linear-gradient(${bg.angle ?? 135}deg, ${bg.from}, ${bg.to})`
+                        : bg.from,
+                    }}
+                  />
                 );
               })}
             </div>

@@ -121,3 +121,111 @@ export const framePadding: CSSProperties = { padding: "var(--slide-space-frame)"
 
 /** Layout components must never receive narration; this keeps that explicit. */
 export type LayoutProps = { slide: Slide; theme: Theme };
+
+/**
+ * Soft accent shapes behind a layout.
+ *
+ * Purely decorative and theme-derived: the fills are accent washes mixed into
+ * the paper, so a slide looks different in every theme instead of every light
+ * theme sharing one white background. `aria-hidden`, no pointer events, and it
+ * never paints over the text area — opacity and placement keep it well under
+ * the contrast threshold for the copy on top.
+ */
+export function AccentShapes({
+  variant = "corner",
+  accent = "var(--slide-accent)",
+  accent2 = "var(--slide-accent-2)",
+  opacity = 0.1,
+}: {
+  variant?: "corner" | "band" | "grid";
+  accent?: string;
+  accent2?: string;
+  opacity?: number;
+}) {
+  const common = {
+    position: "absolute" as const,
+    pointerEvents: "none" as const,
+    "aria-hidden": true,
+  };
+
+  if (variant === "band") {
+    return (
+      <div style={{ ...common, inset: 0, overflow: "hidden" }}>
+        <div
+          style={{
+            position: "absolute",
+            left: "-12%",
+            bottom: "-46%",
+            width: "124%",
+            height: "62%",
+            borderRadius: "50%",
+            background: accent,
+            opacity,
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (variant === "grid") {
+    return (
+      <div style={{ ...common, inset: 0, overflow: "hidden" }}>
+        <div
+          style={{
+            position: "absolute",
+            right: -140,
+            top: -140,
+            width: 460,
+            height: 460,
+            borderRadius: "50%",
+            background: accent2,
+            opacity: opacity * 0.9,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            right: -60,
+            top: -60,
+            width: 240,
+            height: 240,
+            borderRadius: "50%",
+            background: accent,
+            opacity,
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...common, inset: 0, overflow: "hidden" }}>
+      {/* One large, very soft disc: enough to give the slide a colour cast
+          without touching the corner the headline sits in. */}
+      <div
+        style={{
+          position: "absolute",
+          right: -220,
+          bottom: -260,
+          width: 720,
+          height: 720,
+          borderRadius: "50%",
+          background: accent,
+          opacity: opacity * 0.75,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          right: 120,
+          bottom: -180,
+          width: 320,
+          height: 320,
+          borderRadius: "50%",
+          background: accent2,
+          opacity: opacity * 0.6,
+        }}
+      />
+    </div>
+  );
+}
