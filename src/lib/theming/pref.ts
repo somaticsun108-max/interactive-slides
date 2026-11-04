@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { APPEARANCE_IDS, MOOD_IDS } from "./mindmap";
 
 /**
  * The theme preference that crosses trust boundaries.
@@ -7,10 +8,14 @@ import { z } from "zod";
  * deck API) and the BroadcastChannel (any page on the origin can post). Both
  * therefore validate with these definitions rather than trusting the shape.
  *
- * Deliberately narrow: hex colours only, and only the three named modes. There
- * is no way to express anything but a colour preference.
+ * Ids are checked against the generated Mindmap constants, so an unknown mood
+ * or appearance is rejected at the boundary rather than silently falling back
+ * to a colour nobody asked for.
  */
 const HEX = /^#[0-9a-fA-F]{6}$/;
+
+const moodId = z.enum(MOOD_IDS);
+const appearanceId = z.enum(APPEARANCE_IDS);
 
 export const customThemeSchema = z.object({
   seed: z.string().regex(HEX, "seed must be a hex colour like #2E8B74"),
@@ -18,15 +23,39 @@ export const customThemeSchema = z.object({
   mode: z.enum(["legible", "faithful"]).optional(),
 });
 
-export const themePrefSchema = z.object({
-  themeId: z.string().trim().min(1).max(40),
+/** A brand palette: 1–8 hex colours. */
+const paletteSchema = z.array(z.string().regex(HEX)).min(1).max(8);
+
+export const themePrefSchema = z
+  .object({
+  mood: moodId.nullish(),
+  appearance: appearanceId.nullish(),
+  /** Legacy palette id; any short string is allowed so old decks still load. */
+  themeId: z.string().trim().min(1).max(40).optional(),
   custom: customThemeSchema.nullish(),
+  palette: paletteSchema.nullish(),
   faithful: z.boolean().optional(),
   background: z.string().regex(HEX, "background must be a hex colour").nullish(),
   accentMode: z.enum(["single", "rainbow", "alternate"]).optional(),
-});
+})
+  /**
+   * A payload must say *something* about the design. `{}` is not a preference,
+   * it is a missing one, and letting it through would overwrite a deck's theme
+   * with silence.
+   */
+  .refine(
+    (value) =>
+      value.mood !== undefined && value.mood !== null
+        ? true
+        : value.appearance !== undefined && value.appearance !== null
+          ? true
+          : value.themeId !== undefined || Boolean(value.custom?.seed) || Boolean(value.palette?.length),
+    { message: "theme must name a mood, an appearance, a legacy id or a palette" }
+  );
 
 export type ThemePref = z.infer<typeof themePrefSchema>;
+
+const BACKGROUND_ID = /^(paper|wash-[1-4]|gradient|statement|warm|mist|sage|default)$/;
 
 /**
  * Pure guard with the same rules as `themePrefSchema`.
@@ -39,9 +68,33 @@ export function isThemePref(value: unknown): value is ThemePref {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const t = value as Record<string, unknown>;
 
-  if (typeof t.themeId !== "string" || t.themeId.trim().length === 0 || t.themeId.length > 40) {
-    return false;
+  if (t.mood !== undefined && t.mood !== null) {
+    if (typeof t.mood !== "string" || !(MOOD_IDS as readonly string[]).includes(t.mood)) return false;
   }
+
+  if (t.appearance !== undefined && t.appearance !== null) {
+    if (
+      typeof t.appearance !== "string" ||
+      !(APPEARANCE_IDS as readonly string[]).includes(t.appearance)
+    ) {
+      return false;
+    }
+  }
+
+  if (t.themeId !== undefined) {
+    if (typeof t.themeId !== "string" || t.themeId.trim().length === 0 || t.themeId.length > 40) {
+      return false;
+    }
+  }
+
+  // A preference must say *something* about the design.
+  const names =
+    (t.mood !== undefined && t.mood !== null) ||
+    (t.appearance !== undefined && t.appearance !== null) ||
+    t.themeId !== undefined ||
+    (Array.isArray(t.custom) ? false : Boolean((t.custom as { seed?: string } | null)?.seed)) ||
+    (Array.isArray(t.palette) && t.palette.length > 0);
+  if (!names) return false;
 
   if (t.custom !== undefined && t.custom !== null) {
     if (typeof t.custom !== "object" || Array.isArray(t.custom)) return false;
@@ -49,6 +102,13 @@ export function isThemePref(value: unknown): value is ThemePref {
     if (typeof c.seed !== "string" || !HEX.test(c.seed)) return false;
     if (c.bg !== undefined && (typeof c.bg !== "string" || !HEX.test(c.bg))) return false;
     if (c.mode !== undefined && c.mode !== "legible" && c.mode !== "faithful") return false;
+  }
+
+  if (t.palette !== undefined && t.palette !== null) {
+    if (!Array.isArray(t.palette) || t.palette.length < 1 || t.palette.length > 8) return false;
+    for (const colour of t.palette) {
+      if (typeof colour !== "string" || !HEX.test(colour)) return false;
+    }
   }
 
   if (t.faithful !== undefined && typeof t.faithful !== "boolean") return false;
@@ -67,4 +127,9 @@ export function isThemePref(value: unknown): value is ThemePref {
   }
 
   return true;
+}
+
+/** True when a stored background is one of the named theme backgrounds. */
+export function isBackgroundId(value: unknown): value is string {
+  return typeof value === "string" && BACKGROUND_ID.test(value);
 }

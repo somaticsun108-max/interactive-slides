@@ -2,6 +2,7 @@ import { sha256Hex } from "./hash";
 import type { ScriptDocument, ScriptNode } from "./script/types";
 import type { Deck, LayoutId, Slide } from "./slide-types";
 import type { Theme } from "./theme";
+import type { DeckTheme } from "@/lib/types";
 
 /**
  * Deterministic script → slide mapping. No AI, no heuristics beyond the rules
@@ -21,6 +22,16 @@ export interface ScriptToSlidesOptions {
   wordsPerMinute?: number;
   /** Original file name, recorded on the deck for provenance. */
   fileName?: string;
+  /**
+   * The deck's theme preference, inherited by every generated slide.
+   *
+   * A Markdown deck has no per-slide colours: each slide records the same
+   * preference the editor writes, and the shared resolver turns it into roles at
+   * render time. A Markdown slide and a hand-built slide with the same
+   * preference therefore render identically, and re-theming a script deck is one
+   * write rather than a re-import.
+   */
+  themePref?: DeckTheme | null;
 }
 
 /** Words as a presenter would speak them; whitespace-collapsed. */
@@ -55,6 +66,7 @@ function makeSlide(args: {
   body: string[];
   script: string[];
   theme: Theme;
+  themePref?: DeckTheme | null;
   now: Date;
   wordsPerMinute: number;
 }): Slide {
@@ -86,7 +98,7 @@ function makeSlide(args: {
     },
     wordCount,
     estMinutes: round1(wordCount / args.wordsPerMinute),
-    themeId: args.theme.id,
+    themeId: args.themePref?.mood ?? args.themePref?.appearance ?? args.theme.id,
   };
 }
 
@@ -104,6 +116,7 @@ export function nodeToSlide(args: {
   parentHeading: string | null;
   sectionIndex: number;
   theme: Theme;
+  themePref?: DeckTheme | null;
   now: Date;
   wordsPerMinute: number;
 }): Slide {
@@ -142,7 +155,11 @@ export function nodeToSlide(args: {
 }
 
 /** Map a parsed script document to the full slide list, in speaking order. */
-export function scriptToSlides(doc: ScriptDocument, theme: Theme, options?: Omit<ScriptToSlidesOptions, "theme">): Slide[] {
+export function scriptToSlides(
+  doc: ScriptDocument,
+  theme: Theme,
+  options?: Omit<ScriptToSlidesOptions, "theme">
+): Slide[] {
   const now = options?.now ?? new Date();
   const wordsPerMinute = options?.wordsPerMinute ?? DEFAULT_WORDS_PER_MINUTE;
 
@@ -157,6 +174,7 @@ export function scriptToSlides(doc: ScriptDocument, theme: Theme, options?: Omit
       body: [],
       script: doc.titleScript,
       theme,
+      themePref: options?.themePref,
       now,
       wordsPerMinute,
     }),
@@ -175,6 +193,7 @@ export function scriptToSlides(doc: ScriptDocument, theme: Theme, options?: Omit
           // Section numbers are 1-based for `##`; deeper nodes ignore this.
           sectionIndex: sectionIndex - 1,
           theme,
+          themePref: options?.themePref,
           now,
           wordsPerMinute,
         })
@@ -210,6 +229,6 @@ export function buildDeck(
       maxDepth: doc.meta.maxDepth,
       ...(options?.fileName ? { fileName: options.fileName } : {}),
     },
-    themeId: theme.id,
+    themeId: options?.themePref?.mood ?? options?.themePref?.appearance ?? theme.id,
   };
 }

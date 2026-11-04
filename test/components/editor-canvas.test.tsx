@@ -51,10 +51,11 @@ describe("editor canvas background", () => {
     const { container } = render(<Canvas />);
     const styleOf = () => container.querySelector<HTMLElement>("[data-theme]")!.getAttribute("style")!;
 
-    expect(styleOf()).toContain("--bg: #FFFFFF");
+    expect(styleOf()).toContain("--role-canvas: #FFFFFF");
 
     act(() => useDeck.getState().setTheme({ themeId: "ocean" }));
-    expect(styleOf()).toContain("--bg: #F3F6FA");
+    // The legacy "ocean" id migrates to the studio's legible ocean mood.
+    expect(styleOf()).toContain("--role-canvas: #F3F6FA");
     // And the surface itself follows the theme, not the literal white. (jsdom
     // keeps the shorthand as written, so match the background it was given.)
     expect(styleOf()).toMatch(/background:\s*(rgb\(243, 246, 250\)|#F3F6FA)/i);

@@ -1,6 +1,7 @@
 import { uid } from "./ids";
 import type { DeckTheme, PopupBlock, Slide, SlideBackground, SlideObject } from "./types";
-import { SHAPE, TYPE_SCALE, accentFor, resolveDeckTheme } from "@/lib/theming/themes";
+import { accentPairFor, resolveDeckTheme } from "@/lib/theming/deck-theme";
+import { SHAPE, TYPE_SCALE } from "@/lib/theming/themes";
 import type { SlideTemplate } from "./templates";
 
 /**
@@ -31,14 +32,14 @@ interface Palette {
 
 function palette(theme?: DeckTheme | null): Palette {
   const resolved = resolveDeckTheme(theme ?? undefined);
-  const accent = accentFor(resolved, 0, "single");
+  const accent = accentPairFor(resolved, 0, "single");
   return {
-    ink: resolved.ink,
-    muted: resolved.inkMuted,
+    ink: resolved.roles.text,
+    muted: resolved.roles.textMuted,
     accent,
     accentText: accent.text,
-    paper: resolved.bg,
-    surface: "#FFFFFF",
+    paper: resolved.roles.canvas,
+    surface: resolved.roles.surface,
     radius: Math.round(TYPE_SCALE.body * SHAPE.radiusEm),
     line: Math.max(SHAPE.minLinePx, Math.round(TYPE_SCALE.body * SHAPE.lineEm)),
   };

@@ -18,6 +18,8 @@ import { isThemePref } from "@/lib/theming/pref";
 
 export const SYNC_VERSION = 1;
 
+import type { DeckTheme } from "@/lib/types";
+
 /** Structured-clone-safe description of the slide the audience should show. */
 export interface AudienceSlide {
   /** Original slide id, so the audience can verify it has the right deck. */
@@ -39,14 +41,13 @@ export interface AudienceSlide {
   theme?: DeckThemePref;
 }
 
-/** The theme preference as it crosses the channel. */
-export interface DeckThemePref {
-  themeId: string;
-  custom?: { seed: string; bg?: string; mode?: "legible" | "faithful" } | null;
-  faithful?: boolean;
-  background?: string | null;
-  accentMode?: "single" | "rainbow" | "alternate";
-}
+/**
+ * The theme preference as it crosses the channel.
+ *
+ * Structurally the same as `DeckTheme`; aliased so the wire format has a name
+ * of its own and a change to one is a deliberate decision about both.
+ */
+export type DeckThemePref = DeckTheme;
 
 /**
  * `slide-change` is the workhorse message: it carries the slide index, the step

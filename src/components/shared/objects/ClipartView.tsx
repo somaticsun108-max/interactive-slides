@@ -11,7 +11,13 @@ export default function ClipartView({ clipart, boxW, boxH }: { clipart: ClipartP
     if (Icon) {
       return (
         <div className="flex h-full w-full items-center justify-center overflow-hidden">
-          <Icon size={size} color={clipart.iconColor ?? "#0f172a"} strokeWidth={1.75} />
+          {/*
+            An icon is theme-aware by construction: it is a single-colour
+            stroke. With no explicit colour it takes the icon role, so it
+            follows the palette without anyone recolouring it by hand.
+            Emoji below are *not* recoloured — colour emoji carry meaning.
+          */}
+          <Icon size={size} color={clipart.iconColor ?? "var(--role-icon)"} strokeWidth={1.75} />
         </div>
       );
     }

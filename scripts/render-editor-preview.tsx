@@ -12,8 +12,9 @@ import ThemePicker from "@/components/editor/ThemePicker";
 import ThemeColorPicker from "@/components/editor/ThemeColorPicker";
 import { CANVAS_H, CANVAS_W, type Slide } from "@/lib/types";
 import { themedBackgroundStyle } from "@/components/shared/background";
-import { themeToSlideVars } from "@/lib/theming/deck-theme";
-import { THEMES, resolveTheme, themeBackgrounds } from "@/lib/theming/themes";
+import { resolveDeckTheme, themeToCssVars } from "@/lib/theming/deck-theme";
+import { backgroundChoices } from "@/lib/theming/backgrounds";
+import { MOOD_IDS } from "@/lib/theming/mindmap";
 import { useDeck } from "@/store/deckStore";
 
 (globalThis as unknown as { React: typeof React }).React = React;
@@ -28,11 +29,11 @@ const slide: Slide = {
 const fontData = readFileSync(resolve("src/app/fonts/inter-latin.woff2")).toString("base64");
 
 function canvasFor(themeId: string, backgroundId?: string) {
-  const pref = { themeId, background: backgroundId ?? null };
-  const theme = resolveTheme(pref);
-  const background = theme.surface;
-  const style = themedBackgroundStyle(slide, { bg: theme.bg, background });
-  const vars = themeToSlideVars(theme) as Record<string, string>;
+  const pref = { mood: themeId, background: backgroundId ?? null };
+  const theme = resolveDeckTheme(pref);
+  const background = { from: theme.roles.canvas };
+  const style = themedBackgroundStyle(slide, { canvas: theme.roles.canvas, background });
+  const vars = themeToCssVars(theme) as Record<string, unknown> as Record<string, string>;
 
   // A stand-in for slide content drawn with the theme's own tokens.
   const inner = `
@@ -50,7 +51,7 @@ function canvasFor(themeId: string, backgroundId?: string) {
       </div>
     </div>`;
 
-  const dots = themeBackgrounds(theme)
+  const dots = backgroundChoices(theme)
     .map(
       (b) =>
         `<span title="${b.name}" style="display:inline-block;width:26px;height:26px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);background:${
@@ -93,9 +94,9 @@ figure{margin:0}figcaption{font:600 11px/1.6 ui-monospace,monospace;color:#47556
 <h1>What a theme actually changes</h1>
 <p class="sub">Every theme, plus each theme's background options. Same slide, same content.</p>
 <h2>Every theme</h2>
-<div class="row">${THEMES.map((t) => canvasFor(t.id)).join("")}</div>
+<div class="row">${MOOD_IDS.map((id) => canvasFor(id)).join("")}</div>
 <h2>A theme's backgrounds (ocean) and a gradient</h2>
-<div class="row">${themeBackgrounds(resolveTheme({ themeId: "ocean" })).map((b) => canvasFor("ocean", b.id)).join("")}</div>
+<div class="row">${backgroundChoices(resolveDeckTheme({ mood: "mutedOcean" })).map((b) => canvasFor("mutedOcean", b.id)).join("")}</div>
 <h2>Controls</h2>
 <div class="row">
   <div class="panel"><p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#475569">Theme picker (closed / trigger)</p>${pickerMarkup}</div>
@@ -105,4 +106,4 @@ figure{margin:0}figcaption{font:600 11px/1.6 ui-monospace,monospace;color:#47556
 
 mkdirSync(resolve("preview"), { recursive: true });
 writeFileSync(resolve("preview/editor.html"), html);
-console.log(`Rendered ${THEMES.length} themes → preview/editor.html`);
+console.log(`Rendered ${MOOD_IDS.length} moods → preview/editor.html`);

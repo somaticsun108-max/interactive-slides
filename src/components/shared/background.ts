@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Slide } from "@/lib/types";
+import { isLegacyTemplateDefault } from "@/lib/theming/legacy";
 
 /** CSS background for a slide, shared by editor, thumbnails and present mode. */
 export function backgroundStyle(slide: Slide): CSSProperties {
@@ -30,7 +31,9 @@ export function backgroundStyle(slide: Slide): CSSProperties {
 export function themedBackgroundStyle(
   slide: Slide,
   theme: {
-    bg: string;
+    /** The theme's own canvas colour. */
+    canvas: string;
+    /** The chosen background (theme paper, wash, or an exact colour). */
     background?: { from: string; to?: string; angle?: number };
   } | null
 ): CSSProperties {
@@ -41,7 +44,7 @@ export function themedBackgroundStyle(
 
   if (bg.type === "gradient") {
     // The templates' indigo/purple gradient is a placeholder, not a choice.
-    if (bg.from.toLowerCase() === "#4f46e5") {
+    if (isLegacyTemplateDefault(bg.from)) {
       const themed = theme.background;
       return themed
         ? {
@@ -49,7 +52,7 @@ export function themedBackgroundStyle(
               themed.to ?? themed.from
             })`,
           }
-        : { background: theme.bg };
+        : { background: theme.canvas };
     }
     return backgroundStyle(slide);
   }
@@ -57,7 +60,7 @@ export function themedBackgroundStyle(
   // A slide sitting on plain white (or the theme's own paper) has not chosen a
   // colour: it is showing the default, so the theme fills it in.
   const isDefaultPaper =
-    bg.color.toLowerCase() === "#ffffff" || bg.color.toLowerCase() === theme.bg.toLowerCase();
+    isLegacyTemplateDefault(bg.color) || bg.color.toLowerCase() === theme.canvas.toLowerCase();
 
   if (isDefaultPaper && theme.background) {
     const { from, to, angle } = theme.background;

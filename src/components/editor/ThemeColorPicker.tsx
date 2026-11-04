@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { useDeck } from "@/store/deckStore";
-import { contrastRatio, resolveTheme, themeBackgrounds } from "@/lib/theming/themes";
+import { backgroundChoices } from "@/lib/theming/backgrounds";
+import { resolveDeckTheme } from "@/lib/theming/deck-theme";
+import { contrastRatio } from "@/lib/theming/themes";
 
 /**
  * Colour control for object properties.
@@ -20,19 +22,27 @@ export default function ThemeColorPicker({
   label,
   value,
   onChange,
+  onReset,
   /** Swatches to mark as "on the surface", e.g. text on the slide paper. */
   context = "paper",
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  /**
+   * Clears an explicit colour so the object follows the theme again.
+   *
+   * Offered only where a value can be *unset*; without it, a colour someone
+   * picked once would follow them through every theme change with no way back.
+   */
+  onReset?: () => void;
   context?: "paper" | "surface";
 }) {
   const [open, setOpen] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const themePref = useDeck((s) => s.deck.theme);
-  const theme = resolveTheme(themePref);
+  const theme = resolveDeckTheme(themePref);
 
   useEffect(() => {
     if (!open) return;
@@ -51,8 +61,8 @@ export default function ThemeColorPicker({
     };
   }, [open]);
 
-  const backgrounds = themeBackgrounds(theme);
-  const surface = context === "surface" ? "#FFFFFF" : theme.bg;
+  const backgrounds = backgroundChoices(theme);
+  const surface = context === "surface" ? theme.roles.surface : theme.roles.canvas;
 
   /** Grouped swatches: the theme's accents, then its neutrals and papers. */
   const groups: { name: string; swatches: { colour: string; name: string }[] }[] = [
@@ -66,9 +76,9 @@ export default function ThemeColorPicker({
     {
       name: "Text & paper",
       swatches: [
-        { colour: theme.ink, name: `Theme ink ${theme.ink}` },
-        { colour: theme.inkMuted, name: `Muted ink ${theme.inkMuted}` },
-        { colour: "#FFFFFF", name: "White #FFFFFF" },
+        { colour: theme.roles.text, name: `Theme ink ${theme.roles.text}` },
+        { colour: theme.roles.textMuted, name: `Muted ink ${theme.roles.textMuted}` },
+        { colour: theme.roles.surface, name: `Surface ${theme.roles.surface}` },
         ...backgrounds
           .filter((b) => !b.to)
           .slice(0, 5)
@@ -102,6 +112,25 @@ export default function ThemeColorPicker({
           aria-label={`${label} palette`}
           className="absolute left-0 top-full z-50 mt-1.5 w-60 rounded-xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10"
         >
+          {onReset ? (
+            <button
+              type="button"
+              onClick={() => {
+                onReset();
+                setOpen(false);
+              }}
+              data-testid={`colour-reset-${label.toLowerCase().replace(/\s+/g, "-")}`}
+              className="mb-1.5 flex w-full items-center gap-1.5 rounded-md border border-slate-200 px-1.5 py-1 text-left text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span
+                aria-hidden
+                className="h-3 w-3 rounded-full"
+                style={{ background: "var(--role-icon)" }}
+              />
+              Follow the theme
+            </button>
+          ) : null}
+
           {groups.map((group) => (
             <div key={group.name} className="mb-1.5 last:mb-0">
               <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">

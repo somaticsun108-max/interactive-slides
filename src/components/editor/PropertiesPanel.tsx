@@ -9,7 +9,8 @@ import ThemeColorPicker from "./ThemeColorPicker";
 import ActionEditor from "./ActionEditor";
 import { ICON_MAP } from "@/components/shared/objects/iconMap";
 import { MAX_UPLOAD_LABEL, validateImageFile } from "@/lib/upload-limits";
-import { resolveTheme, themeBackgrounds } from "@/lib/theming/themes";
+import { backgroundChoices } from "@/lib/theming/backgrounds";
+import { resolveDeckTheme } from "@/lib/theming/deck-theme";
 
 /** Uploaded/inline sources (blob URLs, data URLs) are not user-editable text. */
 function isStoredSrc(src: string): boolean {
@@ -234,6 +235,7 @@ function ImageSection({ id, image }: { id: string; image: NonNullable<SlideObjec
 
 function ClipartSection({ id, clipart }: { id: string; clipart: NonNullable<SlideObject["clipart"]> }) {
   const updateClipartProps = useDeck((s) => s.updateClipartProps);
+  const theme = resolveDeckTheme(useDeck((s) => s.deck.theme));
   const [pickerOpen, setPickerOpen] = useState(false);
   return (
     <Section title="Clipart">
@@ -245,7 +247,12 @@ function ClipartSection({ id, clipart }: { id: string; clipart: NonNullable<Slid
       </div>
       {clipart.icon && (
         <div className="mt-2">
-          <ThemeColorPicker label="Icon color" value={clipart.iconColor ?? "#0f172a"} onChange={(iconColor) => updateClipartProps(id, { iconColor })} />
+          <ThemeColorPicker
+            label="Icon color"
+            value={clipart.iconColor ?? theme.roles.icon}
+            onChange={(iconColor) => updateClipartProps(id, { iconColor })}
+            onReset={() => updateClipartProps(id, { iconColor: undefined })}
+          />
         </div>
       )}
       {pickerOpen && (
@@ -302,7 +309,7 @@ function BackgroundSection() {
   const slide = useCurrentSlide();
   const updateBackground = useDeck((s) => s.updateBackground);
   const setSlideTransition = useDeck((s) => s.setSlideTransition);
-  const theme = resolveTheme(useDeck((s) => s.deck.theme));
+  const theme = resolveDeckTheme(useDeck((s) => s.deck.theme));
   const bg = slide.background;
   return (
     <div className="mt-6 border-t border-slate-100 pt-4">
@@ -312,7 +319,7 @@ function BackgroundSection() {
         <div className="mb-2.5">
           <span className="field-label">From your theme</span>
           <div className="flex flex-wrap gap-1.5" data-testid="theme-backgrounds">
-            {themeBackgrounds(theme).map((option) => {
+            {backgroundChoices(theme).map((option) => {
               const selected =
                 (bg.type === "gradient" && bg.from === option.from && bg.to === (option.to ?? bg.to)) ||
                 (bg.type === "solid" && bg.color === option.from);

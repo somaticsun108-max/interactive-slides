@@ -104,15 +104,35 @@ export type AccentMode = "single" | "rainbow" | "alternate";
 /**
  * How the design tokens are resolved for a deck.
  *
- * `themeId` selects the palette, `faithful` reproduces a source deck exactly
- * (white text on every fill, even where contrast dips — opt-in only), and
- * `background` swaps in one of the extra light papers.
+ * Three independent controls, deliberately separate fields so changing one
+ * never forces another:
+ *
+ *   colour  → `mood` (one of the studio's 17) or `custom` (one seed)
+ *   canvas  → `background` (a paper, a wash, or an exact colour)
+ *   look    → `appearance` (geometry, corners, connector style)
+ *
+ * `themeId` is kept for decks saved by earlier versions. It is read only when
+ * `mood` and `appearance` are both absent, so old decks keep their colours.
  */
 export interface DeckTheme {
-  themeId: string;
-  /** Present when `themeId` is "custom": the seed the palette is built from. */
+  /** Colour mood id from the studio (see MOOD_LABELS). Preferred. */
+  mood?: string | null;
+  /** Appearance id from the studio; supplies geometry when no mood is chosen. */
+  appearance?: string | null;
+  /**
+   * Legacy single-select palette. Still honoured on read for decks saved before
+   * the mood/appearance split; writes move to `mood`.
+   */
+  themeId?: string;
+  /** Present when a palette is derived from a seed rather than a mood. */
   custom?: { seed: string; bg?: string; mode?: "legible" | "faithful" } | null;
+  /**
+   * Brand palette override — replaces the accent list only. The studio's
+   * "family palette": the canvas, ink and layout are untouched.
+   */
+  palette?: string[] | null;
   faithful?: boolean;
+  /** Canvas override, independent of the palette. */
   background?: string | null;
   accentMode?: AccentMode;
 }

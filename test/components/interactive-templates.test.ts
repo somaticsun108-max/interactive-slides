@@ -133,8 +133,9 @@ describe("interactive templates", () => {
 
   it("restyles completely when the theme changes", () => {
     // The whole point of theme tokens: the same pattern, two palettes.
+    // "dark" is a legacy id that migrates to the studio's midnight mood.
     const light = makePattern("poll", { themeId: "terracotta" })[0];
-    const dark = makePattern("poll", { themeId: "dark" })[0];
+    const dark = makePattern("poll", { themeId: "midnight" })[0];
 
     const fills = (slide: Slide) =>
       slide.objects

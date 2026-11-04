@@ -64,7 +64,9 @@ export default function CanvasObject({
         transition: transform ? undefined : "transform 0.2s ease",
         transformOrigin: "center",
         opacity: isDragging ? 0.85 : 1,
-        outline: selected ? "1.5px solid #6366f1" : undefined,
+        // The selection ring is a role, not a fixed indigo: it has to stay
+        // visible on every palette, including the dark ones.
+        outline: selected ? "var(--select-width) solid var(--role-selection)" : undefined,
         outlineOffset: hasExpand ? 0 : undefined,
         cursor: hasExpand && !editing ? "pointer" : undefined,
       }}
@@ -79,7 +81,7 @@ function TextEditor({ obj }: { obj: SlideObject }) {
   const updateTextProps = useDeck((s) => s.updateTextProps);
   const setEditing = useDeck((s) => s.setEditing);
   const areaRef = useRef<HTMLTextAreaElement>(null);
-  const t = obj.text ?? { content: "", fontSize: 32, color: "#0f172a", fontWeight: 400, align: "left" as const };
+  const t = obj.text ?? { content: "", fontSize: 32, color: "var(--role-text)", fontWeight: 400, align: "left" as const };
 
   return (
     <textarea

@@ -8,6 +8,7 @@
  */
 
 import type { ScriptLevel } from "./script/types";
+import type { DeckTheme } from "@/lib/types";
 
 /** The only layouts Phase 0.5 knows about. */
 export type LayoutId =
@@ -85,15 +86,10 @@ export interface Deck {
   themeId: string;
   /**
    * Design tokens. Absent on decks imported before themes existed; the viewer
-   * falls back to `themeId`, then to the default palette.
+   * normalises the row through `normaliseThemePref`, which maps a legacy
+   * `themeId` onto the equivalent studio mood.
    */
-  theme?: {
-    themeId: string;
-    custom?: { seed: string; bg?: string; mode?: "legible" | "faithful" } | null;
-    faithful?: boolean;
-    background?: string | null;
-    accentMode?: "single" | "rainbow" | "alternate";
-  };
+  theme?: DeckTheme;
 }
 
 /** Total narration length across a deck. */

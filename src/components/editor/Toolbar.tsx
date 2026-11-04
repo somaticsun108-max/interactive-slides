@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import { ArrowRight, Circle, Image as ImageIcon, Smile, Square, Type, MousePointerClick } from "lucide-react";
 import { useDeck } from "@/store/deckStore";
 import EmojiPicker, { type PickerResult } from "./EmojiPicker";
-import { accentFor, resolveDeckTheme, SHAPE, TYPE_SCALE } from "@/lib/theming/themes";
+import { accentPairFor, resolveDeckTheme } from "@/lib/theming/deck-theme";
+import { SHAPE, TYPE_SCALE } from "@/lib/theming/themes";
 
 /** Add-object toolbar above the canvas. */
 export default function Toolbar() {
@@ -23,7 +24,7 @@ export default function Toolbar() {
   function nextAccent() {
     const index = useDeck.getState().deck.slides
       .find((s) => s.id === useDeck.getState().currentSlideId)?.objects.length ?? 0;
-    return accentFor(theme, index, theme.accentMode);
+    return accentPairFor(theme, index, themePref?.accentMode);
   }
 
   function offset() {
@@ -43,7 +44,7 @@ export default function Toolbar() {
       text: {
         content: "New text",
         fontSize: TYPE_SCALE.body,
-        color: theme.ink,
+        color: theme.roles.text,
         fontWeight: 400,
         align: "left",
       },
