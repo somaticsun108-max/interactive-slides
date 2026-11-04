@@ -7,6 +7,7 @@ import type { Slide, SlideObject } from "@/lib/types";
 import EmojiPicker from "./EmojiPicker";
 import ActionEditor from "./ActionEditor";
 import { ICON_MAP } from "@/components/shared/objects/iconMap";
+import { MAX_UPLOAD_LABEL, validateImageFile } from "@/lib/upload-limits";
 
 /** Uploaded/inline sources (blob URLs, data URLs) are not user-editable text. */
 function isStoredSrc(src: string): boolean {
@@ -153,6 +154,13 @@ function ImageSection({ id, image }: { id: string; image: NonNullable<SlideObjec
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    // Check locally first: an oversized body is rejected by the platform before
+    // the route runs, which would surface as a bare 413.
+    const problem = validateImageFile(file);
+    if (problem) {
+      setUploadError(problem);
+      return;
+    }
     setUploadError("");
     setUploading(true);
     try {
@@ -198,7 +206,7 @@ function ImageSection({ id, image }: { id: string; image: NonNullable<SlideObjec
           onClick={() => fileRef.current?.click()}
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
         >
-          {uploading ? "Uploading…" : "Upload image (max 5 MB)"}
+          {uploading ? "Uploading…" : `Upload image (max ${MAX_UPLOAD_LABEL})`}
         </button>
         {image.src && (
           <SmallBtn onClick={() => updateImageProps(id, { src: "" })}>Clear</SmallBtn>

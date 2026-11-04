@@ -45,7 +45,8 @@ npm run db:migrate   # create tables locally
   an old localStorage deck into your account.
 - **Cloud saving** — autosave to Postgres with a 2s debounce (Saving…/Saved/Error in
   the top bar); localStorage kept as an offline fallback cache. Images upload to
-  Vercel Blob (PNG/JPG/WebP/GIF, max 5 MB).
+  Vercel Blob (PNG/JPG/WebP/GIF, max 4 MB — below Vercel's 4.5 MB function
+  request-body cap, see "Deploying on the Hobby plan" below).
 - **Sharing** — the Share button creates a public link `/d/<slug>` (view-only present
   mode, works for signed-out visitors, Open Graph tags included) and an iframe embed
   snippet for `?embed=1`.
@@ -339,3 +340,24 @@ deck list + viewer, presenter/audience windows, tests.
 export, any AI feature, round-trip export back to script, follow-along live sync, the
 `notes.side` field's UI (the field exists on the model for forward-compatibility), and
 re-sync on re-import (a fresh import creates a new deck).
+
+## Deploying on the Vercel Hobby plan
+
+The app runs fine on Hobby, but two platform facts are worth knowing:
+
+- **Hobby is for non-commercial personal use.** Vercel's fair use guidelines say
+  "Hobby teams are restricted to non-commercial personal use only. All commercial
+  usage of the platform requires either a Pro or Enterprise plan." Commercial
+  includes advertising a product or service, taking payments, running ads or
+  affiliate links, and *being paid to build or host the site* — even if the site
+  itself sells nothing. Asking for donations is explicitly not commercial use.
+- **Function request bodies are capped at 4.5 MB on every plan.** Vercel rejects
+  an oversized request at the platform layer, before the handler runs, so the
+  route cannot return a friendly error. Uploads are therefore limited to
+  `MAX_UPLOAD_BYTES` (4 MB, in `src/lib/upload-limits.ts`) and the client checks
+  the same constant before sending, so the user sees a clear message instead of
+  a bare `413 FUNCTION_PAYLOAD_TOO_LARGE`.
+
+Also worth knowing on Hobby: usage is not billed overage — if you exceed an
+allowance (e.g. 100 GB fast data transfer or 1M function invocations) that
+feature typically pauses until the 30-day window resets.
