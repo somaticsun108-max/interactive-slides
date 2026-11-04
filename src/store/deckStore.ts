@@ -15,6 +15,7 @@ import type {
   TextProps,
   ButtonProps,
   ClipartProps,
+  DeckTheme,
 } from "@/lib/types";
 import { uid } from "@/lib/ids";
 import { makeSampleDeck } from "@/lib/sampleDeck";
@@ -57,6 +58,7 @@ interface DeckStore {
   // deck
   setTitle: (title: string) => void;
   replaceDeck: (deck: Deck) => void;
+  setTheme: (patch: Partial<DeckTheme>) => void;
 
   // slides
   addSlide: (slide?: Slide) => string;
@@ -133,6 +135,9 @@ export const useDeck = create<DeckStore>()((set, get) => {
         future: [],
 
         setTitle: (title) => apply((deck) => ({ ...deck, title })),
+
+        setTheme: (patch) =>
+          apply((deck) => ({ ...deck, theme: { ...(deck.theme ?? { themeId: "terracotta" }), ...patch } })),
 
         replaceDeck: (deck) =>
           set({

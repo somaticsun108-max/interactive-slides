@@ -203,7 +203,7 @@ describe("presenter ⇄ audience windows", () => {
     // The audience never posts anything except its single hello.
     for (const message of FakeBroadcastChannel.delivered) {
       const type = (message as { type?: string }).type;
-      expect(["hello", "slide-change", "session-end"]).toContain(type);
+      expect(["hello", "state", "slide-change", "session-end"]).toContain(type);
     }
   });
 
@@ -221,11 +221,11 @@ describe("presenter ⇄ audience windows", () => {
       fireEvent.click(screen.getByText("next"));
     });
 
-    // Exactly one slide-change for one advance (the handshake already settled).
-    const slideChanges = FakeBroadcastChannel.delivered.filter(
-      (m) => (m as { type?: string }).type === "slide-change"
+    // Exactly one snapshot for one advance (the handshake already settled).
+    const snapshots = FakeBroadcastChannel.delivered.filter(
+      (m) => (m as { type?: string }).type === "state"
     );
-    expect(slideChanges).toHaveLength(1);
+    expect(snapshots).toHaveLength(1);
   });
 
   it("closes both channels on unmount", async () => {
@@ -257,5 +257,85 @@ describe("presenter ⇄ audience windows", () => {
 
     await waitFor(() => expect(screen.getByTestId("audience")).toHaveTextContent("Waiting for the presenter"));
     expect(screen.getByTestId("audience")).not.toHaveTextContent("Not my deck");
+  });
+});
+
+describe("audience joining late (the black-screen bug)", () => {
+  /** Audience window that mounts first, exactly like opening /present/audience
+   *  by hand before any presenter exists. */
+  function AudienceOnly({ deck }: { deck: Deck }) {
+    return <AudienceView deckId={deck.id} />;
+  }
+
+  function PresenterOnly({ deck }: { deck: Deck }) {
+    const session = usePresentSession(deck);
+    return (
+      <div>
+        <p data-testid="position">
+          {session.position.slideIndex}:{session.position.stepIndex}
+        </p>
+        <button onClick={session.advance}>next</button>
+        <button onClick={session.resync}>resync</button>
+      </div>
+    );
+  }
+
+  it("shows a slide when the presenter window opens second", async () => {
+    const deck = makeDeck();
+    const { unmount } = render(<AudienceOnly deck={deck} />);
+    expect(screen.getByTestId("audience")).toHaveTextContent("Waiting for the presenter");
+
+    // Presenter appears afterwards: its mount snapshot must reach the audience.
+    render(<PresenterOnly deck={deck} />);
+    await waitFor(() => expect(screen.getByTestId("audience")).toHaveTextContent(deck.slides[0].headline));
+
+    unmount();
+  });
+
+  it("recovers with an explicit resync if a snapshot was missed", async () => {
+    const deck = makeDeck();
+    render(<AudienceOnly deck={deck} />);
+    const { unmount } = render(<PresenterOnly deck={deck} />);
+    await waitFor(() => expect(screen.getByTestId("audience")).toHaveTextContent(deck.slides[0].headline));
+
+    // Simulate a window that mounted with nothing and the audience dropping out.
+    await act(async () => {
+      fireEvent.click(screen.getByText("resync"));
+    });
+    await waitFor(() => expect(screen.getByTestId("audience")).toHaveTextContent(deck.slides[0].headline));
+    unmount();
+  });
+
+  it("ignores stale snapshots (lower seq) so the audience never goes backwards", async () => {
+    const deck = makeDeck();
+    FakeBroadcastChannel.instances.clear();
+    render(<AudienceOnly deck={deck} />);
+    // Post from a separate channel, like a presenter window would: a channel
+    // never receives its own messages.
+    const sender = new FakeBroadcastChannel(`deck-sync:${deck.id}`);
+
+    const snapshot = (seq: number, headline: string) => ({
+      v: 1,
+      deckId: deck.id,
+      type: "state",
+      slideIndex: 0,
+      stepIndex: 0,
+      total: 2,
+      seq,
+      slide: { id: "s", layoutId: "content.message", headline, body: ["x"], themeId: "brand.default" },
+    });
+
+    await act(async () => {
+      sender.postMessage(snapshot(5, "Newer"));
+    });
+    await waitFor(() => expect(screen.getByTestId("audience")).toHaveTextContent("Newer"));
+
+    await act(async () => {
+      sender.postMessage(snapshot(3, "Older"));
+    });
+    // Give the (synchronous) listener a tick to run.
+    await act(async () => {});
+    expect(screen.getByTestId("audience")).toHaveTextContent("Newer");
+    expect(screen.getByTestId("audience")).not.toHaveTextContent("Older");
   });
 });

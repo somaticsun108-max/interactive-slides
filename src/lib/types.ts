@@ -98,8 +98,32 @@ export interface Slide {
   transition?: SlideTransition;
 }
 
+/** Which colours a new object picks up. */
+export type AccentMode = "single" | "rainbow" | "alternate";
+
+/**
+ * How the design tokens are resolved for a deck.
+ *
+ * `themeId` selects the palette, `faithful` reproduces a source deck exactly
+ * (white text on every fill, even where contrast dips — opt-in only), and
+ * `background` swaps in one of the extra light papers.
+ */
+export interface DeckTheme {
+  themeId: string;
+  /** Present when `themeId` is "custom": the seed the palette is built from. */
+  custom?: { seed: string; bg?: string; mode?: "legible" | "faithful" } | null;
+  faithful?: boolean;
+  background?: string | null;
+  accentMode?: AccentMode;
+}
+
 export interface Deck {
   version: 1;
   title: string;
   slides: Slide[];
+  /**
+   * Design tokens for the deck. Absent on decks saved before themes existed;
+   * `resolveDeckTheme` fills in the default.
+   */
+  theme?: DeckTheme;
 }

@@ -97,6 +97,33 @@ describe("toAudienceSlide", () => {
     const divider = slides().find((s) => s.layoutId === "section.divider")!;
     expect(toAudienceSlide(divider, 0)).not.toHaveProperty("visibleSteps");
   });
+
+  it("carries the deck's theme so the audience matches the presenter", () => {
+    const [hero] = slides();
+    const payload = toAudienceSlide(hero, 0, { themeId: "ocean" });
+    expect(payload.themeId).toBe("ocean");
+    expect(payload.theme).toEqual({ themeId: "ocean" });
+  });
+
+  it("carries a custom theme seed across the channel", () => {
+    const [hero] = slides();
+    const payload = toAudienceSlide(hero, 0, {
+      themeId: "custom",
+      custom: { seed: "#2E8B74" },
+      faithful: true,
+    });
+    expect(payload.theme?.custom?.seed).toBe("#2E8B74");
+    expect(payload.theme?.faithful).toBe(true);
+    // Still no narration anywhere in the payload.
+    expect(payload).not.toHaveProperty("notes");
+  });
+
+  it("falls back to the slide's own themeId when the deck has no preference", () => {
+    const [hero] = slides();
+    const payload = toAudienceSlide(hero, 0, null);
+    expect(payload.themeId).toBe(hero.themeId);
+    expect(payload).not.toHaveProperty("theme");
+  });
 });
 
 describe("parseMessage", () => {
@@ -115,7 +142,7 @@ describe("parseMessage", () => {
       { ...base, type: "slide-change", slideIndex: 0, total: 3, stepIndex: 0, slide: slidePayload },
       { ...base, type: "slide-change", slideIndex: 1, stepIndex: 2, total: 3, slide: slidePayload },
       { ...base, type: "session-end", slideIndex: 2 },
-      { ...base, type: "hello" },
+      { ...base, type: "hello", since: 0 },
     ];
     for (const message of messages) {
       expect(parseMessage(message, deckId)).toEqual(message);
@@ -154,6 +181,49 @@ describe("parseMessage", () => {
         deckId
       )
     ).toBeNull();
+  });
+});
+
+describe("theme validation over the channel", () => {
+  const deckId = "deck-1";
+  const base = { v: SYNC_VERSION as typeof SYNC_VERSION, deckId, type: "state" as const, slideIndex: 0, stepIndex: 0, seq: 1 };
+  const slide = { id: "s", layoutId: "content.message" as const, headline: "Hi", body: ["x"], themeId: "ocean" };
+
+  const withTheme = (theme: unknown) =>
+    parseMessage({ ...base, slide: { ...slide, theme } }, deckId);
+
+  it("accepts a well-formed theme block", () => {
+    expect(withTheme({ themeId: "custom", custom: { seed: "#2E8B74" }, faithful: true })).not.toBeNull();
+    expect(withTheme({ themeId: "dark" })).not.toBeNull();
+    expect(withTheme({ themeId: "pastel", background: "#EEF3EC", accentMode: "rainbow" })).not.toBeNull();
+  });
+
+  it("rejects a non-hex seed", () => {
+    // Any page on the origin can post to this channel, so colours are parsed
+    // strictly rather than trusted.
+    expect(withTheme({ themeId: "custom", custom: { seed: "red" } })).toBeNull();
+    expect(withTheme({ themeId: "custom", custom: { seed: "#12345" } })).toBeNull();
+    expect(withTheme({ themeId: "custom", custom: { seed: "javascript:alert(1)" } })).toBeNull();
+  });
+
+  it("rejects a non-hex background", () => {
+    expect(withTheme({ themeId: "ocean", background: "url(evil)" })).toBeNull();
+  });
+
+  it("rejects unknown modes and accent modes", () => {
+    expect(withTheme({ themeId: "ocean", accentMode: "sparkle" })).toBeNull();
+    expect(withTheme({ themeId: "custom", custom: { seed: "#2E8B74", mode: "wild" } })).toBeNull();
+  });
+
+  it("rejects a malformed theme shape", () => {
+    expect(withTheme("dark")).toBeNull();
+    expect(withTheme([])).toBeNull();
+    expect(withTheme({ custom: 42 })).toBeNull();
+    expect(withTheme({ themeId: 5 })).toBeNull();
+  });
+
+  it("still accepts a payload with no theme at all", () => {
+    expect(parseMessage({ ...base, slide }, deckId)).not.toBeNull();
   });
 });
 

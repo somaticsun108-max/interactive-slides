@@ -156,7 +156,14 @@ describe("brand kit", () => {
 
     expect(html).toContain("--slide-paper");
     expect(html).toContain(defaultTheme.colors.paper);
-    expect(html).toContain("var(--slide-type-display)");
+    // Headline size is now fitted (a px value), so assert a token that stays a
+    // token: the type scale is exposed as variables on the frame either way.
+    expect(html).toContain(`--slide-type-display:${defaultTheme.type.display}px`);
+    // Both vocabularies are emitted: canonical tokens and the --slide-* names.
+    expect(html).toContain("--ink:");
+    expect(html).toContain("--accent-1:");
+    expect(html).toContain("var(--slide-type-h3)");
+    expect(html).toContain("var(--slide-ink-muted)");
     expect(html).toContain("var(--slide-font-sans)");
     // No raw font-family stacks or accent literals in the markup.
     expect(html).not.toContain(defaultTheme.fonts.sans);

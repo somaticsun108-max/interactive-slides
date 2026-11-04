@@ -1,5 +1,6 @@
 import { uid } from "./ids";
 import type { PopupBlock, Slide, SlideBackground, SlideObject } from "./types";
+import { INTERACTIVE_PATTERNS } from "./interactive-patterns";
 
 /**
  * Slide templates. A template is just a factory that returns a Slide made of
@@ -12,6 +13,12 @@ export interface SlideTemplate {
   description: string;
   preview: string; // emoji shown in the picker card
   make: () => Slide;
+  /**
+   * How many slides this template adds. Multi-slide templates (a poll with its
+   * results, a branching scenario) build their extra slides from the same
+   * pattern; `make` returns the first.
+   */
+  slideCount?: number;
 }
 
 // ---------- tiny builders ----------
@@ -95,7 +102,8 @@ const PHOTO2 = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200
 
 // ---------- the 10 templates + blank ----------
 
-export const TEMPLATES: SlideTemplate[] = [
+/** The ten layout templates. */
+const LAYOUT_TEMPLATES: SlideTemplate[] = [
   {
     id: "blank",
     name: "Blank",
@@ -318,3 +326,29 @@ export const TEMPLATES: SlideTemplate[] = [
       ]),
   },
 ];
+
+/**
+ * Everything the picker offers: the layout templates plus the interactive
+ * patterns (poll, card sort, reveal, hotspot map, branching, think-pair-share,
+ * exit ticket). The patterns are theme-aware, so `make` there returns a slide
+ * already coloured for the deck; `makeIn` passes the deck's theme through.
+ */
+export const TEMPLATES: SlideTemplate[] = [
+  ...LAYOUT_TEMPLATES,
+  ...INTERACTIVE_PATTERNS.map((pattern) => ({
+    id: pattern.id,
+    name: pattern.name,
+    description: pattern.description,
+    preview: pattern.preview,
+    slideCount: pattern.slides().length,
+    make: () => pattern.slides()[0],
+  })),
+];
+
+/** Build every slide a template adds, themed for the deck. */
+export function makeTemplateSlides(templateId: string, theme?: import("./types").DeckTheme | null): Slide[] {
+  const pattern = INTERACTIVE_PATTERNS.find((p) => p.id === templateId);
+  if (pattern) return pattern.slides(theme);
+  const layout = LAYOUT_TEMPLATES.find((t) => t.id === templateId);
+  return layout ? [layout.make()] : [];
+}

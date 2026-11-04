@@ -1,0 +1,189 @@
+/* GENERATED FILE - do not edit by hand.
+   Source: src/lib/theming/themes.ts  |  Regenerate: npm run themes:css */
+
+:root {
+  --font-sans: var(--font-inter), Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Type scale for the 1280x720 canvas; nothing below --type-min. */
+  --type-title: 52px;
+  --type-section: 34px;
+  --type-body: 28px;
+  --type-min: 20px;
+
+  --radius: 0.55em;
+  --line-width: 3px;
+  --marker-size: 0.85em;
+  --select-width: 3px;
+  --select-gap: 2px;
+}
+
+[data-theme="terracotta"] {
+  --bg: #FFFFFF;
+  --ink: #3D474D;
+  --ink-muted: #3D474D;
+  --root: transparent;
+  --root-text: #3D474D;
+  --select: #12A8F0;
+  --accent-1: #BA594A;
+  --accent-1-text: #FFFFFF;
+  --accent-1-line: #BA594A;
+  --accent-2: #F79B8D;
+  --accent-2-text: #3D474D;
+  --accent-2-line: #F36954;
+  --accent-3: #F1D1C3;
+  --accent-3-text: #3D474D;
+  --accent-3-line: #D6784F;
+  --accent-4: #87BBC4;
+  --accent-4-text: #3D474D;
+  --accent-4-line: #529BA7;
+  --accent-5: #5A798C;
+  --accent-5-text: #FFFFFF;
+  --accent-5-line: #5A798C;
+  --accent-6: #324758;
+  --accent-6-text: #FFFFFF;
+  --accent-6-line: #324758;
+  --accent-count: 6;
+}
+
+[data-theme="spectrum"] {
+  --bg: #FFFFFF;
+  --ink: #2D3748;
+  --ink-muted: #2D3748;
+  --root: #1F2733;
+  --root-text: #FFFFFF;
+  --select: #12A8F0;
+  --accent-1: #7B4FE0;
+  --accent-1-text: #FFFFFF;
+  --accent-1-line: #7B4FE0;
+  --accent-2: #D6336C;
+  --accent-2-text: #FFFFFF;
+  --accent-2-line: #D6336C;
+  --accent-3: #CD440E;
+  --accent-3-text: #FFFFFF;
+  --accent-3-line: #CD440E;
+  --accent-4: #F59F00;
+  --accent-4-text: #2D3748;
+  --accent-4-line: #BE7416;
+  --accent-5: #288639;
+  --accent-5-text: #FFFFFF;
+  --accent-5-line: #288639;
+  --accent-6: #1A76C7;
+  --accent-6-text: #FFFFFF;
+  --accent-6-line: #1A76C7;
+  --accent-7: #0C7E92;
+  --accent-7-text: #FFFFFF;
+  --accent-7-line: #0C7E92;
+  --accent-count: 7;
+}
+
+[data-theme="pastel"] {
+  --bg: #FFFFFF;
+  --ink: #2D3748;
+  --ink-muted: #2D3748;
+  --root: #2D3748;
+  --root-text: #FFFFFF;
+  --select: #12A8F0;
+  --accent-1: #F4A6A0;
+  --accent-1-text: #2D3748;
+  --accent-1-line: #D2605A;
+  --accent-2: #F6C28B;
+  --accent-2-text: #2D3748;
+  --accent-2-line: #CC8228;
+  --accent-3: #F3E08A;
+  --accent-3-text: #2D3748;
+  --accent-3-line: #A68800;
+  --accent-4: #B5D99C;
+  --accent-4-text: #2D3748;
+  --accent-4-line: #5E9A3A;
+  --accent-5: #9CD3D0;
+  --accent-5-text: #2D3748;
+  --accent-5-line: #3C928C;
+  --accent-6: #A9C4EB;
+  --accent-6-text: #2D3748;
+  --accent-6-line: #4A7FC4;
+  --accent-7: #C9B6E4;
+  --accent-7-text: #2D3748;
+  --accent-7-line: #8160B8;
+  --accent-count: 7;
+}
+
+[data-theme="ocean"] {
+  --bg: #F3F6FA;
+  --ink: #2D3748;
+  --ink-muted: #2D3748;
+  --root: #1F2733;
+  --root-text: #FFFFFF;
+  --select: #12A8F0;
+  --accent-1: #2B6F8E;
+  --accent-1-text: #FFFFFF;
+  --accent-1-line: #2B6F8E;
+  --accent-2: #347D8D;
+  --accent-2-text: #FFFFFF;
+  --accent-2-line: #347D8D;
+  --accent-3: #5FB3A1;
+  --accent-3-text: #2D3748;
+  --accent-3-line: #489786;
+  --accent-4: #8CC084;
+  --accent-4-text: #2D3748;
+  --accent-4-line: #599A4F;
+  --accent-5: #586DCA;
+  --accent-5-text: #FFFFFF;
+  --accent-5-line: #586DCA;
+  --accent-6: #8763B0;
+  --accent-6-text: #FFFFFF;
+  --accent-6-line: #8763B0;
+  --accent-count: 6;
+}
+
+[data-theme="vivid-video"] {
+  --bg: #FFFFFF;
+  --ink: #3F4245;
+  --ink-muted: #727275;
+  --root: #1F2733;
+  --root-text: #FFFFFF;
+  --select: #12A8F0;
+  --accent-1: #2E69FF;
+  --accent-1-text: #FFFFFF;
+  --accent-1-line: #2E69FF;
+  --accent-2: #BFA0F7;
+  --accent-2-text: #3F4245;
+  --accent-2-line: #A67AF4;
+  --accent-3: #FB8DB3;
+  --accent-3-text: #3F4245;
+  --accent-3-line: #F95C92;
+  --accent-4: #DF2E00;
+  --accent-4-text: #FFFFFF;
+  --accent-4-line: #DF2E00;
+  --accent-count: 4;
+}
+
+[data-theme="dark"] {
+  --bg: #1F2733;
+  --ink: #E6EAF0;
+  --ink-muted: #E6EAF0;
+  --root: #141A24;
+  --root-text: #E6EAF0;
+  --select: #12A8F0;
+  --accent-1: #F4A6A0;
+  --accent-1-text: #2D3748;
+  --accent-1-line: #F4A6A0;
+  --accent-2: #F6C28B;
+  --accent-2-text: #2D3748;
+  --accent-2-line: #F6C28B;
+  --accent-3: #F3E08A;
+  --accent-3-text: #2D3748;
+  --accent-3-line: #F3E08A;
+  --accent-4: #B5D99C;
+  --accent-4-text: #2D3748;
+  --accent-4-line: #B5D99C;
+  --accent-5: #9CD3D0;
+  --accent-5-text: #2D3748;
+  --accent-5-line: #9CD3D0;
+  --accent-6: #A9C4EB;
+  --accent-6-text: #2D3748;
+  --accent-6-line: #A9C4EB;
+  --accent-7: #C9B6E4;
+  --accent-7-text: #2D3748;
+  --accent-7-line: #C9B6E4;
+  --accent-count: 7;
+}

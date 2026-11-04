@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Presentation } from "lucide-react";
 import { deckEstMinutes, deckWordCount, type Deck } from "@/lib/deck/slide-types";
 import { getTheme } from "@/lib/deck/theme";
+import ThemePicker from "@/components/editor/ThemePicker";
+import type { DeckTheme } from "@/lib/types";
 import { stepsOf } from "@/lib/deck/sync";
 import { fitScale, SlideFrame } from "@/components/slides/primitives";
 import SlideRenderer from "@/components/slides/SlideRenderer";
@@ -21,7 +23,29 @@ import PacingBadge from "@/components/slides/PacingBadge";
  */
 export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail: string }) {
   const router = useRouter();
-  const theme = getTheme(deck.themeId);
+  // The deck's saved preference wins; decks imported before themes existed fall
+  // back to their `themeId`, then to the default palette.
+  const [themePref, setThemePref] = useState<DeckTheme | undefined>(
+    deck.theme ?? (deck.themeId ? { themeId: deck.themeId } : undefined)
+  );
+  const theme = getTheme(themePref);
+  const [saving, startSaving] = useTransition();
+
+  function changeTheme(patch: Partial<DeckTheme>) {
+    const next: DeckTheme = { ...(themePref ?? { themeId: "terracotta" }), ...patch };
+    setThemePref(next);
+    // Persist in the background: re-styling is cheap and the preview is
+    // instant, so the deck does not have to reload to show it.
+    startSaving(async () => {
+      await fetch(`/api/script-decks/${encodeURIComponent(deck.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme: next }),
+      }).catch(() => {
+        /* offline: the change still shows for this session */
+      });
+    });
+  }
   const [index, setIndex] = useState(0);
   const [showSteps, setShowSteps] = useState(true);
 
@@ -91,8 +115,12 @@ export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail:
               <span className="rounded-full bg-white px-2 py-0.5 font-mono text-[11px] text-slate-500 ring-1 ring-slate-200">
                 {slide.layoutId}
               </span>
+              <div className="ml-auto flex items-center gap-2">
+                {saving ? <span className="text-[11px] text-slate-400">Saving…</span> : null}
+                <ThemePicker value={themePref} onChange={changeTheme} />
+              </div>
               {stepsOf(slide) > 0 ? (
-                <label className="ml-auto inline-flex items-center gap-1.5 text-xs text-slate-500">
+                <label className="inline-flex items-center gap-1.5 text-xs text-slate-500">
                   <input
                     type="checkbox"
                     checked={showSteps}

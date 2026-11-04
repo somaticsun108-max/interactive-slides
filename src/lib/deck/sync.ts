@@ -14,6 +14,7 @@
  */
 
 import type { Slide } from "./slide-types";
+import { isThemePref } from "@/lib/theming/pref";
 
 export const SYNC_VERSION = 1;
 
@@ -30,6 +31,21 @@ export interface AudienceSlide {
   visibleSteps?: number;
   /** Brand kit id, so the audience renders with the deck's theme. */
   themeId: string;
+  /**
+   * The deck's full theme preference, so the audience sees the same palette
+   * (including a custom one) as the presenter. Optional: older presenters send
+   * `themeId` only, which still resolves.
+   */
+  theme?: DeckThemePref;
+}
+
+/** The theme preference as it crosses the channel. */
+export interface DeckThemePref {
+  themeId: string;
+  custom?: { seed: string; bg?: string; mode?: "legible" | "faithful" } | null;
+  faithful?: boolean;
+  background?: string | null;
+  accentMode?: "single" | "rainbow" | "alternate";
 }
 
 /**
@@ -49,7 +65,19 @@ export type AudienceMessage =
       slide: AudienceSlide;
     }
   | { v: typeof SYNC_VERSION; deckId: string; type: "session-end"; slideIndex: number }
-  | { v: typeof SYNC_VERSION; deckId: string; type: "hello" };
+  /** Audience announces itself; `since` is the last update it received (0 = fresh). */
+  | { v: typeof SYNC_VERSION; deckId: string; type: "hello"; since?: number }
+  /** Presenter's answer: the slide that must be on screen, with a sequence number. */
+  | {
+      v: typeof SYNC_VERSION;
+      deckId: string;
+      type: "state";
+      slideIndex: number;
+      stepIndex: number;
+      total: number;
+      slide: AudienceSlide;
+      seq: number;
+    };
 
 /** Presenter-side state derived from arrow keys / clickers. */
 export interface PresenterPosition {
@@ -109,14 +137,19 @@ export function navigate(
  * Deliberately constructs a new object field by field: `notes` is never copied,
  * so narration cannot leak through a spread even if the Slide type grows.
  */
-export function toAudienceSlide(slide: Slide, stepIndex: number): AudienceSlide {
+export function toAudienceSlide(
+  slide: Slide,
+  stepIndex: number,
+  themePref?: DeckThemePref | null
+): AudienceSlide {
   const payload: AudienceSlide = {
     id: slide.id,
     layoutId: slide.layoutId,
     headline: slide.headline,
     body: [...slide.body],
-    themeId: slide.themeId,
+    themeId: themePref?.themeId ?? slide.themeId,
   };
+  if (themePref) payload.theme = themePref;
   if (slide.eyebrow !== undefined) payload.eyebrow = slide.eyebrow;
   if (slide.subtitle !== undefined) payload.subtitle = slide.subtitle;
   if (slide.layoutId === "content.steps") payload.visibleSteps = Math.max(0, stepIndex + 1);
@@ -149,6 +182,9 @@ export function parseMessage(raw: unknown, deckId: string): AudienceMessage | nu
       if (typeof m.slide.headline !== "string" || !Array.isArray(m.slide.body)) return null;
       // Refuse payloads that carry notes, whatever produced them.
       if ("notes" in m.slide || "narration" in m.slide) return null;
+      // A theme block is optional, but if present it must be well-formed and
+      // must not smuggle anything but colours and modes across.
+      if (m.slide.theme !== undefined && !isThemePref(m.slide.theme)) return null;
       return m;
     }
     case "session-end": {
@@ -156,9 +192,19 @@ export function parseMessage(raw: unknown, deckId: string): AudienceMessage | nu
       if (!isInt(m.slideIndex)) return null;
       return m;
     }
-    case "hello":
-      // The audience does not know the deck size; the presenter answers with it.
-      return msg as Extract<AudienceMessage, { type: "hello" }>;
+    case "hello": {
+      const m = msg as Extract<AudienceMessage, { type: "hello" }>;
+      if (m.since !== undefined && !isInt(m.since)) return null;
+      return m;
+    }
+    case "state": {
+      const m = msg as Extract<AudienceMessage, { type: "state" }>;
+      if (!isInt(m.slideIndex) || !isInt(m.stepIndex) || !isInt(m.seq)) return null;
+      if (!m.slide || typeof m.slide.headline !== "string" || !Array.isArray(m.slide.body)) return null;
+      if ("notes" in m.slide || "narration" in m.slide) return null;
+      if (m.slide.theme !== undefined && !isThemePref(m.slide.theme)) return null;
+      return m;
+    }
     default:
       return null;
   }
