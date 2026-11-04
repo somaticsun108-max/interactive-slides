@@ -59,14 +59,14 @@ export default function Canvas() {
   return (
     <div
       ref={containerRef}
-      className="relative flex flex-1 items-center justify-center overflow-hidden p-6"
+      className="canvas-workspace relative flex flex-1 items-center justify-center overflow-hidden p-8"
       onPointerDown={(e) => {
         if (e.target === e.currentTarget) select(null);
       }}
     >
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div
-          className="relative shadow-xl"
+          className="relative rounded-md bg-white shadow-slide ring-1 ring-slate-900/5"
           style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}
           onPointerDown={(e) => {
             if (e.target === e.currentTarget) select(null);

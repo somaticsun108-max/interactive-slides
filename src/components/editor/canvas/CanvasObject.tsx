@@ -64,7 +64,7 @@ export default function CanvasObject({
         transition: transform ? undefined : "transform 0.2s ease",
         transformOrigin: "center",
         opacity: isDragging ? 0.85 : 1,
-        outline: selected ? "2px solid #4f46e5" : undefined,
+        outline: selected ? "1.5px solid #6366f1" : undefined,
         outlineOffset: hasExpand ? 0 : undefined,
         cursor: hasExpand && !editing ? "pointer" : undefined,
       }}

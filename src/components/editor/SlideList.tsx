@@ -37,17 +37,17 @@ export default function SlideList() {
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-slate-200 bg-white">
-      <div className="flex items-center justify-between px-3 py-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Slides</h2>
+      <div className="flex h-11 shrink-0 items-center justify-between border-b border-slate-100 pl-4 pr-2">
+        <h2 className="panel-heading">Slides</h2>
         <button
           onClick={() => setPickerOpen(true)}
           title="Add slide from template"
-          className="rounded p-1 text-slate-600 hover:bg-slate-100"
+          className="grid h-7 w-7 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
         >
-          <Plus size={18} />
+          <Plus size={16} />
         </button>
       </div>
-      <div className="thin-scroll flex-1 space-y-2 overflow-y-auto px-3 pb-4">
+      <div className="thin-scroll flex-1 space-y-2.5 overflow-y-auto px-3 pb-4 pt-3">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={deck.slides.map((s) => s.id)} strategy={verticalListSortingStrategy}>
             {deck.slides.map((slide, i) => (
@@ -93,17 +93,26 @@ function SortableThumb({
       {...listeners}
       onClick={onPick}
       className={cn(
-        "group relative cursor-grab rounded-lg border-2 p-1 transition",
-        active ? "border-indigo-500 bg-indigo-50" : "border-transparent hover:border-slate-300",
+        "group relative cursor-grab rounded-xl border p-1 transition duration-150",
+        active
+          ? "border-indigo-500 bg-indigo-50/40 shadow-sm ring-4 ring-indigo-500/10"
+          : "border-slate-200 hover:border-slate-300 hover:shadow-sm",
         isDragging && "opacity-50"
       )}
       style={{ transform: CSS.Transform.toString(transform), transition }}
     >
-      <SlideStatic slide={slide} width={THUMB_W} />
-      <div className="absolute left-1.5 top-1.5 rounded bg-slate-900/70 px-1.5 text-[10px] font-semibold text-white">
+      <div className="overflow-hidden rounded-lg ring-1 ring-slate-900/5">
+        <SlideStatic slide={slide} width={THUMB_W} />
+      </div>
+      <div
+        className={cn(
+          "absolute left-2 top-2 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums backdrop-blur-sm",
+          active ? "bg-indigo-600 text-white" : "bg-slate-900/55 text-white"
+        )}
+      >
         {index + 1}
       </div>
-      <div className="absolute right-1 top-1.5 hidden gap-0.5 group-hover:flex">
+      <div className="absolute right-2 top-2 hidden gap-0.5 rounded-lg bg-white/95 p-0.5 shadow-sm ring-1 ring-slate-900/5 group-hover:flex">
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
@@ -111,7 +120,7 @@ function SortableThumb({
             onDuplicate();
           }}
           title="Duplicate slide"
-          className="rounded bg-white/90 p-1 text-slate-600 shadow hover:text-indigo-600"
+          className="grid h-6 w-6 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-indigo-600"
         >
           <Copy size={12} />
         </button>
@@ -122,7 +131,7 @@ function SortableThumb({
             onDelete();
           }}
           title="Delete slide"
-          className="rounded bg-white/90 p-1 text-slate-600 shadow hover:text-red-600"
+          className="grid h-6 w-6 place-items-center rounded-md text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
         >
           <Trash2 size={12} />
         </button>

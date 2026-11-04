@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronsDown, ChevronsUp } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsDown, ChevronsUp, Trash2 } from "lucide-react";
 import { useCurrentSlide, useDeck } from "@/store/deckStore";
 import type { Slide, SlideObject } from "@/lib/types";
 import EmojiPicker from "./EmojiPicker";
@@ -20,9 +20,20 @@ export default function PropertiesPanel() {
   const obj = slide.objects.find((o) => o.id === selectedId) ?? null;
 
   return (
-    <aside className="thin-scroll w-72 shrink-0 overflow-y-auto border-l border-slate-200 bg-white p-4">
-      {obj ? <ObjectProps obj={obj} /> : <p className="text-sm text-slate-400">Select an object to edit it.</p>}
-      <BackgroundSection />
+    <aside className="flex w-72 shrink-0 flex-col border-l border-slate-200 bg-white">
+      <div className="flex h-11 shrink-0 items-center border-b border-slate-100 px-4">
+        <h2 className="panel-heading">Properties</h2>
+      </div>
+      <div className="thin-scroll flex-1 overflow-y-auto p-4">
+        {obj ? (
+          <ObjectProps obj={obj} />
+        ) : (
+          <p className="rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-sm text-slate-400">
+            Select an object to edit it.
+          </p>
+        )}
+        <BackgroundSection />
+      </div>
     </aside>
   );
 }
@@ -35,9 +46,13 @@ function ObjectProps({ obj }: { obj: SlideObject }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{obj.type} object</h3>
-        <button onClick={() => deleteObject(obj.id)} className="text-xs font-medium text-red-600 hover:underline">
-          Delete
+        <h3 className="text-sm font-semibold capitalize tracking-[-0.01em] text-slate-800">{obj.type}</h3>
+        <button
+          onClick={() => deleteObject(obj.id)}
+          title="Delete object"
+          className="grid h-7 w-7 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+        >
+          <Trash2 size={14} />
         </button>
       </div>
 
@@ -83,7 +98,7 @@ function TextSection({ id, text: t }: { id: string; text: NonNullable<SlideObjec
         value={t.content}
         onChange={(e) => updateTextProps(id, { content: e.target.value })}
         rows={3}
-        className="w-full rounded-md border border-slate-200 p-2 text-sm focus:border-indigo-400 focus:outline-none"
+        className="field resize-y leading-relaxed"
       />
       <div className="mt-2 grid grid-cols-2 gap-2">
         <NumberField label="Size" value={t.fontSize} onChange={(fontSize) => updateTextProps(id, { fontSize })} />
@@ -160,13 +175,13 @@ function ImageSection({ id, image }: { id: string; image: NonNullable<SlideObjec
   return (
     <Section title="Image">
       <label className="block">
-        <span className="block text-[10px] font-medium text-slate-400">Image URL</span>
+        <span className="field-label">Image URL</span>
         <input
           value={isStoredSrc(image.src) ? "(uploaded file)" : image.src}
           disabled={isStoredSrc(image.src)}
           placeholder="https://…"
           onChange={(e) => updateImageProps(id, { src: e.target.value })}
-          className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-indigo-400 focus:outline-none disabled:bg-slate-50"
+          className="field"
         />
       </label>
       <div className="mt-2 flex items-center gap-2">
@@ -181,22 +196,18 @@ function ImageSection({ id, image }: { id: string; image: NonNullable<SlideObjec
           type="button"
           disabled={uploading}
           onClick={() => fileRef.current?.click()}
-          className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
         >
           {uploading ? "Uploading…" : "Upload image (max 5 MB)"}
         </button>
-        {uploadError && <span className="text-xs text-rose-600">{uploadError}</span>}
-      </div>
-      <div className="mt-2 flex gap-1">
-        <SmallBtn onClick={() => fileRef.current?.click()}>Upload file…</SmallBtn>
-        <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
         {image.src && (
           <SmallBtn onClick={() => updateImageProps(id, { src: "" })}>Clear</SmallBtn>
         )}
+        {uploadError && <span className="text-xs text-rose-600">{uploadError}</span>}
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2">
         <div>
-          <span className="block text-[10px] font-medium text-slate-400">Fit</span>
+          <span className="field-label">Fit</span>
           <div className="flex gap-1">
             {(["cover", "contain"] as const).map((f) => (
               <SmallBtn key={f} onClick={() => updateImageProps(id, { fit: f })} active={image.fit === f}>
@@ -217,7 +228,7 @@ function ClipartSection({ id, clipart }: { id: string; clipart: NonNullable<Slid
   return (
     <Section title="Clipart">
       <div className="flex items-center gap-2">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-2xl">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-2xl shadow-sm">
           {clipart.icon ? <TickIcon name={clipart.icon} /> : clipart.emoji || "?"}
         </div>
         <SmallBtn onClick={() => setPickerOpen(true)}>Change…</SmallBtn>
@@ -251,11 +262,11 @@ function ButtonSection({ id, button }: { id: string; button: NonNullable<SlideOb
   return (
     <Section title="Button">
       <label className="block">
-        <span className="block text-[10px] font-medium text-slate-400">Label</span>
+        <span className="field-label">Label</span>
         <input
           value={button.label}
           onChange={(e) => updateButtonProps(id, { label: e.target.value })}
-          className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-indigo-400 focus:outline-none"
+          className="field"
         />
       </label>
       <div className="mt-2 grid grid-cols-2 gap-2">
@@ -283,7 +294,7 @@ function BackgroundSection() {
   const setSlideTransition = useDeck((s) => s.setSlideTransition);
   const bg = slide.background;
   return (
-    <div className="mt-6 border-t border-slate-200 pt-4">
+    <div className="mt-6 border-t border-slate-100 pt-4">
       <Section title="Slide background">
         <div className="flex gap-1">
           {(["solid", "gradient"] as const).map((k) => (
@@ -327,7 +338,7 @@ function BackgroundSection() {
 export function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h4 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{title}</h4>
+      <h4 className="panel-heading mb-2">{title}</h4>
       {children}
     </div>
   );
@@ -336,12 +347,12 @@ export function Section({ title, children }: { title: string; children: React.Re
 export function NumberField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   return (
     <label className="block">
-      <span className="block text-[10px] font-medium text-slate-400">{label}</span>
+      <span className="field-label">{label}</span>
       <input
         type="number"
         value={Math.round(value)}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full rounded-md border border-slate-200 px-1.5 py-1 text-sm focus:border-indigo-400 focus:outline-none"
+        className="field px-2 tabular-nums"
       />
     </label>
   );
@@ -350,12 +361,12 @@ export function NumberField({ label, value, onChange }: { label: string; value: 
 export function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <label className="block">
-      <span className="block text-[10px] font-medium text-slate-400">{label}</span>
+      <span className="field-label">{label}</span>
       <input
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-7 w-full cursor-pointer rounded border border-slate-200"
+        className="h-8 w-full cursor-pointer rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm transition hover:border-slate-300"
       />
     </label>
   );
@@ -376,9 +387,7 @@ function SmallBtn({
     <button
       onClick={onClick}
       title={title}
-      className={`flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${
-        active ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-slate-200 text-slate-600 hover:bg-slate-100"
-      }`}
+      className={`chip-btn ${active ? "chip-btn-active" : "chip-btn-idle"}`}
     >
       {children}
     </button>

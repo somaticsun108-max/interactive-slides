@@ -91,11 +91,11 @@ export default function EditorShell({
   }, []);
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-screen flex-col bg-slate-50">
       <TopBar deckId={deckId} userEmail={userEmail} />
       <div className="flex min-h-0 flex-1">
         <SlideList />
-        <main className="flex min-w-0 flex-1 flex-col bg-slate-100">
+        <main className="flex min-w-0 flex-1 flex-col bg-slate-50">
           <Toolbar />
           <Canvas />
         </main>

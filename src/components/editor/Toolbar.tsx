@@ -85,14 +85,14 @@ export default function Toolbar() {
   }
 
   return (
-    <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-2">
+    <div className="flex items-center gap-0.5 border-b border-slate-200 bg-white px-2.5 py-1.5">
       <ToolButton onClick={addText} icon={<Type size={16} />} label="Text" />
       <ToolButton onClick={addImage} icon={<ImageIcon size={16} />} label="Image" />
       <ToolButton onClick={() => setPickerOpen(true)} icon={<Smile size={16} />} label="Sticker" />
       <div className="relative">
         <ToolButton onClick={() => setShapeOpen((v) => !v)} icon={<Square size={16} />} label="Shape" chevron />
         {shapeOpen && (
-          <div className="absolute left-0 top-10 z-50 flex gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+          <div className="animate-pop absolute left-0 top-9 z-50 flex gap-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-float">
             <IconBtn onClick={() => addShape("rect")} title="Rectangle">
               <Square size={16} />
             </IconBtn>
@@ -125,18 +125,18 @@ function ToolButton({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
     >
       {icon}
       {label}
-      {chevron && <span className="text-slate-400">▾</span>}
+      {chevron && <span className="ml-0.5 text-slate-400">▾</span>}
     </button>
   );
 }
 
 function IconBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} title={title} className="rounded p-2 text-slate-700 hover:bg-slate-100">
+    <button onClick={onClick} title={title} className="icon-btn">
       {children}
     </button>
   );
