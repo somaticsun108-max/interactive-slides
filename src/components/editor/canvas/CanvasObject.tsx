@@ -32,12 +32,20 @@ export default function CanvasObject({
   const dx = (transform?.x ?? 0) / scaleRef.current;
   const dy = (transform?.y ?? 0) / scaleRef.current;
 
+  // dnd-kit's activator lives on listeners.onPointerDown. Setting an
+  // onPointerDown prop after the spread would replace it and the object could
+  // never be dragged, so select() and the drag handler are merged here.
+  const onPointerDown = (e: React.PointerEvent) => {
+    select(obj.id);
+    listeners?.onPointerDown?.(e);
+  };
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      onPointerDown={() => select(obj.id)}
+      onPointerDown={onPointerDown}
       onDoubleClick={() => {
         if (obj.type === "text") setEditing(obj.id);
       }}
