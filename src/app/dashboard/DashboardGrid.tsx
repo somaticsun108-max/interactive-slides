@@ -210,10 +210,10 @@ export default function DashboardGrid({ decks, email }: { decks: DeckMeta[]; ema
             {decks.map((deck) => (
               <div
                 key={deck.id}
-                className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-float"
+                className="group relative rounded-2xl border border-slate-200 bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-float"
               >
                 <Link href={`/deck/${deck.id}`} className="block">
-                  <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                  <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-slate-100">
                     {deck.firstSlide ? (
                       <DeckThumb slide={deck.firstSlide} />
                     ) : (
@@ -302,15 +302,19 @@ function DeckActions({
           e.stopPropagation();
           setOpen(!open);
         }}
+        aria-haspopup="menu"
+        aria-expanded={open}
         disabled={disabled}
         className="grid h-7 w-7 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
         title="Deck actions"
       >
         <MoreVertical size={16} />
       </button>
+      {/* Opens upward so the card's own bounds never clip it. */}
       {open && (
         <div
-          className="animate-pop absolute right-0 top-9 z-30 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-float"
+          role="menu"
+          className="animate-pop absolute bottom-9 right-0 z-50 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-float"
           onClick={(e) => e.stopPropagation()}
         >
           <button onClick={onRename} className="menu-item">

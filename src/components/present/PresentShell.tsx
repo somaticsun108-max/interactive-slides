@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CANVAS_H, CANVAS_W } from "@/lib/types";
 import type { Deck, Slide, SlideObject } from "@/lib/types";
 import { useDeck } from "@/store/deckStore";
@@ -106,7 +107,7 @@ export default function PresentShell({
     >
       <div
         key={slide.id}
-        className={`relative overflow-hidden ${animClass}`}
+        className={`relative z-10 overflow-hidden ${animClass}`}
         style={{ width: CANVAS_W * scale, height: CANVAS_H * scale }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -145,24 +146,54 @@ export default function PresentShell({
             ))}
           </div>
 
-          <div className="absolute bottom-5 left-4 text-xs text-white/70">
-            <span className="font-semibold">{slide.name}</span>
-            <span className="ml-2 text-white/40">
-              {idx + 1} / {deck.slides.length} · ← → navigate · Esc exit
-            </span>
+          {/* Visible navigation: keyboard shortcuts alone are undiscoverable. */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-7 flex justify-center">
+            <div className="pointer-events-auto flex items-center gap-0.5 rounded-full bg-slate-900/55 p-1 text-white/85 ring-1 ring-white/10 backdrop-blur">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prev();
+                }}
+                disabled={idx === 0}
+                aria-label="Previous slide"
+                className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-white/15 disabled:opacity-30"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="px-1.5 text-xs font-medium tabular-nums">
+                {idx + 1} / {deck.slides.length}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  next();
+                }}
+                disabled={idx === deck.slides.length - 1}
+                aria-label="Next slide"
+                className="grid h-7 w-7 place-items-center rounded-full transition hover:bg-white/15 disabled:opacity-30"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+
+          <div className="absolute bottom-5 left-4 text-xs text-white/60">
+            <span className="font-semibold text-white/80">{slide.name}</span>
+            <span className="ml-2 hidden text-white/35 sm:inline">Esc to exit</span>
           </div>
         </>
       )}
       {backHref && !embed && (
         <Link
           href={backHref}
-          className="absolute right-4 top-4 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 backdrop-blur hover:bg-white/20"
+          className="absolute right-4 top-4 z-20 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 ring-1 ring-white/10 backdrop-blur transition hover:bg-white/20 hover:text-white"
         >
           Back to editor
         </Link>
       )}
-      <button onClick={prev} aria-label="Previous slide" className="absolute left-0 top-0 h-full w-16 cursor-pointer opacity-0" />
-      <button onClick={next} aria-label="Next slide" className="absolute right-0 top-0 h-full w-16 cursor-pointer opacity-0" />
+      {/* Edge click zones sit below the slide so they never block object actions. */}
+      <button onClick={prev} aria-label="Previous slide" className="absolute left-0 top-0 z-0 h-full w-16 cursor-pointer opacity-0" />
+      <button onClick={next} aria-label="Next slide" className="absolute right-0 top-0 z-0 h-full w-16 cursor-pointer opacity-0" />
     </div>
   );
 }

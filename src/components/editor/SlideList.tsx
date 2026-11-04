@@ -112,7 +112,8 @@ function SortableThumb({
       >
         {index + 1}
       </div>
-      <div className="absolute right-2 top-2 hidden gap-0.5 rounded-lg bg-white/95 p-0.5 shadow-sm ring-1 ring-slate-900/5 group-hover:flex">
+      {/* Always visible: hover-only controls are unreachable on touch devices. */}
+      <div className="absolute right-2 top-2 flex gap-0.5 rounded-lg bg-white/95 p-0.5 shadow-sm ring-1 ring-slate-900/5 opacity-80 transition group-hover:opacity-100">
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {

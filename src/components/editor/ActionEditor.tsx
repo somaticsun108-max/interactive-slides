@@ -40,7 +40,7 @@ export default function ActionEditor({ obj }: { obj: SlideObject }) {
   const blocks = action.type === "popup" || action.type === "expand" ? action.blocks : null;
 
   return (
-    <div className="mt-6 border-t border-slate-200 pt-4">
+    <div className="mt-6 border-t border-slate-100 pt-4">
       <Section title="On click (action)">
         <div className="flex flex-wrap gap-1">
           <Choice active={action.type === "none"} onClick={() => pick("none")}>
@@ -63,11 +63,11 @@ export default function ActionEditor({ obj }: { obj: SlideObject }) {
         {action.type === "popup" && (
           <div className="mt-2 space-y-2">
             <label className="block">
-              <span className="block text-[10px] font-medium text-slate-400">Popup title</span>
+              <span className="field-label">Popup title</span>
               <input
                 value={action.title}
                 onChange={(e) => setAction(obj.id, { ...action, title: e.target.value })}
-                className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-indigo-400 focus:outline-none"
+                className="field"
               />
             </label>
             <NumberField
@@ -80,11 +80,11 @@ export default function ActionEditor({ obj }: { obj: SlideObject }) {
 
         {action.type === "goto" && (
           <label className="mt-2 block">
-            <span className="block text-[10px] font-medium text-slate-400">Go to slide</span>
+            <span className="field-label">Go to slide</span>
             <select
               value={action.slideId}
               onChange={(e) => setAction(obj.id, { type: "goto", slideId: e.target.value })}
-              className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-indigo-400 focus:outline-none"
+              className="field"
             >
               {deck.slides.map((s, i) => (
                 <option key={s.id} value={s.id}>
@@ -97,19 +97,19 @@ export default function ActionEditor({ obj }: { obj: SlideObject }) {
 
         {action.type === "url" && (
           <label className="mt-2 block">
-            <span className="block text-[10px] font-medium text-slate-400">URL (opens in new tab)</span>
+            <span className="field-label">URL (opens in new tab)</span>
             <input
               value={action.url}
               placeholder="https://example.com"
               onChange={(e) => setAction(obj.id, { type: "url", url: e.target.value })}
-              className="w-full rounded-md border border-slate-200 px-2 py-1 text-sm focus:border-indigo-400 focus:outline-none"
+              className="field"
             />
           </label>
         )}
 
         {blocks && (
           <div className="mt-3 space-y-2">
-            <span className="block text-[10px] font-medium text-slate-400">Content blocks</span>
+            <span className="field-label">Content blocks</span>
             {blocks.map((b, i) => (
               <BlockEditorRow
                 key={b.id}
@@ -144,7 +144,7 @@ export default function ActionEditor({ obj }: { obj: SlideObject }) {
         {action.type !== "none" && (
           <button
             onClick={() => run(obj, { gotoSlide: setCurrentSlide })}
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-500"
           >
             <Play size={12} /> Test action
           </button>
@@ -194,9 +194,9 @@ function BlockEditorRow({
   onMove: (dir: "up" | "down") => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-2">
-      <div className="mb-1 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-500">{block.type}</span>
+    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-2">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-indigo-500">{block.type}</span>
         <div className="flex gap-0.5">
           <MiniBtn disabled={first} onClick={() => onMove("up")} title="Move up">
             <ArrowUp size={11} />
@@ -215,7 +215,7 @@ function BlockEditorRow({
           value={block.text}
           rows={2}
           onChange={(e) => onChange({ text: e.target.value })}
-          className="w-full rounded border border-slate-200 p-1.5 text-xs focus:border-indigo-400 focus:outline-none"
+          className="field-sm resize-y bg-white"
         />
       )}
 
@@ -224,7 +224,7 @@ function BlockEditorRow({
           value={block.src}
           placeholder="Image URL…"
           onChange={(e) => onChange({ src: e.target.value })}
-          className="w-full rounded border border-slate-200 p-1.5 text-xs focus:border-indigo-400 focus:outline-none"
+          className="field-sm bg-white"
         />
       )}
 
@@ -234,13 +234,13 @@ function BlockEditorRow({
             value={block.url}
             placeholder="https://…"
             onChange={(e) => onChange({ url: e.target.value })}
-            className="w-full rounded border border-slate-200 p-1.5 text-xs focus:border-indigo-400 focus:outline-none"
+            className="field-sm bg-white"
           />
           <input
             value={block.label}
             placeholder="Link label"
             onChange={(e) => onChange({ label: e.target.value })}
-            className="w-full rounded border border-slate-200 p-1.5 text-xs focus:border-indigo-400 focus:outline-none"
+            className="field-sm bg-white"
           />
         </div>
       )}
@@ -265,10 +265,7 @@ function YouTubeField({ block, onChange }: { block: PopupBlock & { type: "youtub
           const id = parseYouTubeId(v);
           onChange({ videoId: id ?? "" });
         }}
-        className={cn(
-          "w-full rounded border p-1.5 text-xs focus:outline-none",
-          invalid ? "border-red-300 bg-red-50" : "border-slate-200 focus:border-indigo-400"
-        )}
+        className={cn("field-sm bg-white", invalid && "border-rose-300 bg-rose-50 focus:border-rose-400")}
       />
       {invalid && <p className="mt-0.5 text-[10px] text-red-500">Not a valid YouTube link</p>}
       {!invalid && block.videoId && <p className="mt-0.5 text-[10px] text-emerald-600">Video OK ✓</p>}
@@ -282,10 +279,7 @@ function Choice({ active, onClick, children }: { active: boolean; onClick: () =>
   return (
     <button
       onClick={onClick}
-      className={cn(
-        "flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium",
-        active ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-slate-200 text-slate-600 hover:bg-slate-100"
-      )}
+      className={cn("chip-btn", active ? "chip-btn-active" : "chip-btn-idle")}
     >
       {children}
     </button>
@@ -296,7 +290,7 @@ function AddBtn({ onClick, children }: { onClick: () => void; children: React.Re
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1 rounded-md border border-dashed border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-500 hover:border-indigo-400 hover:text-indigo-600"
+      className="inline-flex items-center gap-1 rounded-lg border border-dashed border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-500 transition hover:border-indigo-400 hover:bg-white hover:text-indigo-600"
     >
       <Plus size={11} />
       {children}
@@ -323,8 +317,8 @@ function MiniBtn({
       disabled={disabled}
       title={title}
       className={cn(
-        "rounded p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-25",
-        danger && "hover:bg-red-50 hover:text-red-600"
+        "grid h-5 w-5 place-items-center rounded text-slate-400 transition hover:bg-white hover:text-slate-700 disabled:opacity-25 disabled:hover:bg-transparent",
+        danger && "hover:bg-rose-50 hover:text-rose-600"
       )}
     >
       {children}
