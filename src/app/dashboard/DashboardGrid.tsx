@@ -139,11 +139,11 @@ export default function DashboardGrid({
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-brand-canvas">
       <AppHeader userEmail={email} active="dashboard">
         <Link
           href="/decks"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:border-brand-border-strong hover:bg-brand-canvas hover:text-slate-900"
           title="Decks generated from a script file"
         >
           <FileText size={14} /> Import a script
@@ -163,7 +163,7 @@ export default function DashboardGrid({
           <button
             onClick={() => setPickerOpen(true)}
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500 active:translate-y-px disabled:opacity-60"
+            className="sun-button !px-3.5 !py-2"
           >
             <FilePlus2 size={16} /> New deck
           </button>
@@ -198,8 +198,8 @@ export default function DashboardGrid({
         )}
 
         {decks.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-20 text-center">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-indigo-50 text-indigo-600">
+          <div className="rounded-2xl border border-dashed border-brand-border-strong bg-white/70 px-6 py-20 text-center">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-pale text-brand-blue">
               <LayoutTemplate size={26} />
             </div>
             <h2 className="mt-4 text-lg font-semibold tracking-[-0.01em] text-slate-900">No decks yet</h2>
@@ -208,13 +208,13 @@ export default function DashboardGrid({
             </p>
             <Link
               href="/decks"
-              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 transition hover:text-indigo-500"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand-blue transition hover:text-brand-blue-hover"
             >
               <FileText size={15} /> Import a script
             </Link>
             <button
               onClick={() => setPickerOpen(true)}
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500"
+              className="sun-button mt-6"
             >
               <LayoutTemplate size={16} /> Create your first deck
             </button>
@@ -224,10 +224,10 @@ export default function DashboardGrid({
             {decks.map((deck) => (
               <div
                 key={deck.id}
-                className="group relative rounded-2xl border border-slate-200 bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-float"
+                className="group relative rounded-2xl border border-brand-border bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-brand-border-strong hover:shadow-float"
               >
                 <Link href={`/deck/${deck.id}`} className="block">
-                  <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-slate-100">
+                  <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-brand-pale">
                     {deck.firstSlide ? (
                       <DeckThumb slide={deck.firstSlide} />
                     ) : (
@@ -240,7 +240,7 @@ export default function DashboardGrid({
                     )}
                   </div>
                 </Link>
-                <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3.5 py-3">
+                <div className="flex items-center justify-between gap-2 border-t border-brand-border-soft px-3.5 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold tracking-[-0.01em] text-slate-900" title={deck.title}>
                       {deck.title}
@@ -270,7 +270,7 @@ export default function DashboardGrid({
             </div>
             <Link
               href="/decks"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-white px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:border-brand-border-strong hover:bg-brand-canvas hover:text-slate-900"
             >
               <FileText size={14} /> Import a script
             </Link>
@@ -279,9 +279,9 @@ export default function DashboardGrid({
           {scriptDecks.length === 0 ? (
             <Link
               href="/decks"
-              className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-4 py-5 transition hover:border-indigo-300 hover:bg-white"
+              className="flex items-center gap-3 rounded-2xl border border-dashed border-brand-border-strong bg-white/60 px-4 py-5 transition hover:border-brand-blue/50 hover:bg-white"
             >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-pale text-brand-blue">
                 <FileText size={18} />
               </span>
               <span className="min-w-0">
@@ -296,10 +296,10 @@ export default function DashboardGrid({
               {scriptDecks.map((deck) => (
                 <div
                   key={deck.id}
-                  className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-float"
+                  className="group relative overflow-hidden rounded-2xl border border-brand-border bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-brand-border-strong hover:shadow-float"
                 >
                   <Link href={`/deck/${deck.id}`} className="block">
-                    <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                    <div className="relative aspect-video w-full overflow-hidden bg-brand-pale">
                       {deck.firstSlide ? (
                         <SlideFrame theme={getTheme(deck.firstSlide.themeId)} scale={fitScale(400, 225, "cover")}>
                           <SlideRenderer slide={deck.firstSlide} theme={getTheme(deck.firstSlide.themeId)} />
@@ -310,7 +310,7 @@ export default function DashboardGrid({
                       </span>
                     </div>
                   </Link>
-                  <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3.5 py-3">
+                  <div className="flex items-center justify-between gap-2 border-t border-brand-border-soft px-3.5 py-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold tracking-[-0.01em] text-slate-900" title={deck.title}>
                         {deck.title}
@@ -321,7 +321,7 @@ export default function DashboardGrid({
                     </div>
                     <Link
                       href={`/present/control?deckId=${deck.id}`}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-brand-border px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-brand-border-strong hover:bg-brand-canvas hover:text-slate-900"
                       title="Open the presenter window"
                     >
                       <Presentation size={13} /> Present
@@ -393,7 +393,7 @@ function DeckActions({
         aria-haspopup="menu"
         aria-expanded={open}
         disabled={disabled}
-        className="grid h-7 w-7 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+        className="grid h-7 w-7 place-items-center rounded-lg text-slate-400 transition hover:bg-brand-pale hover:text-slate-700 disabled:opacity-50"
         title="Deck actions"
       >
         <MoreVertical size={16} />
@@ -402,7 +402,7 @@ function DeckActions({
       {open && (
         <div
           role="menu"
-          className="animate-pop absolute bottom-9 right-0 z-50 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-float"
+          className="animate-pop absolute bottom-9 right-0 z-50 w-44 rounded-xl border border-brand-border bg-white p-1 shadow-float"
           onClick={(e) => e.stopPropagation()}
         >
           <button onClick={onRename} className="menu-item">
@@ -411,7 +411,7 @@ function DeckActions({
           <button onClick={onDuplicate} className="menu-item">
             <Copy size={14} className="text-slate-400" /> Duplicate
           </button>
-          <div className="my-1 h-px bg-slate-100" />
+          <div className="my-1 h-px bg-brand-pale" />
           <button onClick={onDelete} className="menu-item text-rose-600 hover:bg-rose-50">
             <Trash2 size={14} /> Delete
           </button>

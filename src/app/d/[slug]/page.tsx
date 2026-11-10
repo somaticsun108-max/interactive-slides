@@ -40,14 +40,14 @@ export default async function PublicDeckPage({
 
   if (!row) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-1 bg-slate-50 p-6 text-center">
+      <main className="flex min-h-screen flex-col items-center justify-center gap-1 bg-brand-canvas p-6 text-center">
         <p className="text-lg font-semibold tracking-[-0.01em] text-slate-800">This deck is private or doesn't exist</p>
         <p className="max-w-sm text-sm text-slate-500">
           Ask the author for a new link, or check that it was shared correctly.
         </p>
         <Link
           href="/"
-          className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500"
+          className="sun-button mt-3"
         >
           Go home
         </Link>

@@ -88,11 +88,11 @@ function ExpandedCard({
 
   return (
     <div
-      className="pointer-events-auto absolute flex flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-2 ring-indigo-500"
+      className="pointer-events-auto absolute flex flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-2 ring-brand-blue"
       style={{ left, top, width, maxHeight: bounds.h - top - 12 }}
     >
-      <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">Details</span>
+      <div className="flex items-center justify-between border-b border-brand-border-soft bg-brand-canvas px-3 py-1.5">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-gold-ink">Details</span>
         <button onClick={onClose} title="Collapse" className="rounded p-1 text-slate-500 hover:bg-slate-200">
           <X size={14} />
         </button>

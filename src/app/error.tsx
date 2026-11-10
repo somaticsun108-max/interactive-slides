@@ -19,7 +19,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-100 p-6 text-center">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-brand-pale p-6 text-center">
       <div className="text-5xl">🎬</div>
       <h1 className="text-xl font-semibold text-slate-800">Something went wrong</h1>
       <p className="max-w-md text-sm text-slate-500">
@@ -34,13 +34,13 @@ export default function Error({
       <div className="flex flex-wrap justify-center gap-2">
         <button
           onClick={reset}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+          className="sun-button"
         >
           Try again
         </button>
         <Link
           href="/dashboard"
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          className="rounded-lg border border-brand-border bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-brand-canvas"
         >
           Back to My Decks
         </Link>

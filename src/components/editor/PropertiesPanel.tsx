@@ -24,15 +24,15 @@ export default function PropertiesPanel() {
   const obj = slide.objects.find((o) => o.id === selectedId) ?? null;
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-l border-slate-200 bg-white">
-      <div className="flex h-11 shrink-0 items-center border-b border-slate-100 px-4">
+    <aside className="flex w-72 shrink-0 flex-col border-l border-brand-border bg-white">
+      <div className="flex h-11 shrink-0 items-center border-b border-brand-border-soft px-4">
         <h2 className="panel-heading">Properties</h2>
       </div>
       <div className="thin-scroll flex-1 overflow-y-auto p-4">
         {obj ? (
           <ObjectProps obj={obj} />
         ) : (
-          <p className="rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-brand-border px-3 py-6 text-center text-sm text-slate-400">
             Select an object to edit it.
           </p>
         )}
@@ -207,7 +207,7 @@ function ImageSection({ id, image }: { id: string; image: NonNullable<SlideObjec
           type="button"
           disabled={uploading}
           onClick={() => fileRef.current?.click()}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-brand-border-strong hover:bg-brand-canvas disabled:opacity-50"
         >
           {uploading ? "Uploading…" : `Upload image (max ${MAX_UPLOAD_LABEL})`}
         </button>
@@ -240,7 +240,7 @@ function ClipartSection({ id, clipart }: { id: string; clipart: NonNullable<Slid
   return (
     <Section title="Clipart">
       <div className="flex items-center gap-2">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-2xl shadow-sm">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-brand-border bg-brand-canvas text-2xl shadow-sm">
           {clipart.icon ? <TickIcon name={clipart.icon} /> : clipart.emoji || "?"}
         </div>
         <SmallBtn onClick={() => setPickerOpen(true)}>Change…</SmallBtn>
@@ -312,7 +312,7 @@ function BackgroundSection() {
   const theme = resolveDeckTheme(useDeck((s) => s.deck.theme));
   const bg = slide.background;
   return (
-    <div className="mt-6 border-t border-slate-100 pt-4">
+    <div className="mt-6 border-t border-brand-border-soft pt-4">
       <Section title="Slide background">
         {/* The theme's own backgrounds as one-click options: this is what makes
             switching theme visible on a slide instead of a hidden accent. */}
@@ -421,7 +421,7 @@ export function ColorField({ label, value, onChange }: { label: string; value: s
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 w-full cursor-pointer rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm transition hover:border-slate-300"
+        className="h-8 w-full cursor-pointer rounded-lg border border-brand-border bg-white p-0.5 shadow-sm transition hover:border-brand-border-strong"
       />
     </label>
   );

@@ -100,7 +100,7 @@ export default function ShareDialog({
       aria-label="Share deck"
     >
       <div
-        className="animate-pop w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-float"
+        className="animate-pop w-full max-w-md rounded-2xl border border-brand-border bg-white p-5 shadow-float"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">
@@ -119,7 +119,7 @@ export default function ShareDialog({
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-brand-border bg-brand-canvas/60 p-3">
               <span className="flex items-center gap-2">
                 <Globe size={16} className="shrink-0 text-slate-400" />
                 <span className="text-sm font-medium text-slate-700">Anyone with the link can view</span>
@@ -132,7 +132,7 @@ export default function ShareDialog({
                 disabled={isPublic === null}
                 onClick={() => toggle(isPublic !== true)}
                 className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${
-                  isPublic === true ? "bg-indigo-600" : "bg-slate-300"
+                  isPublic === true ? "bg-brand-blue" : "bg-slate-300"
                 } disabled:opacity-50`}
               >
                 <span
@@ -152,12 +152,12 @@ export default function ShareDialog({
             {isPublic === true && link && (
               <div className="mt-4">
                 <div className="flex items-center gap-2">
-                  <div className="min-w-0 flex-1 truncate rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                  <div className="min-w-0 flex-1 truncate rounded-lg border border-brand-border bg-brand-canvas px-3 py-2 text-sm text-slate-600">
                     {link}
                   </div>
                   <button
                     onClick={() => copy(link, "link")}
-                    className="flex shrink-0 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-500"
+                    className="sun-button !gap-1.5 !px-3 !py-2"
                   >
                     {copied === "link" ? <Check size={14} /> : <Copy size={14} />}
                     {copied === "link" ? "Copied" : "Copy"}
@@ -168,18 +168,18 @@ export default function ShareDialog({
                   <div className="mt-3">
                     <button
                       onClick={() => setShowEmbed((v) => !v)}
-                      className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 transition hover:text-indigo-500"
+                      className="flex items-center gap-1.5 text-sm font-medium text-brand-blue transition hover:text-brand-blue-hover"
                     >
                       <Link2 size={14} /> {showEmbed ? "Hide embed code" : "Copy embed code"}
                     </button>
                     {showEmbed && (
                       <div className="mt-2">
-                        <pre className="thin-scroll overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
+                        <pre className="thin-scroll overflow-x-auto rounded-lg border border-brand-border bg-brand-canvas p-3 text-xs leading-relaxed text-slate-600">
                           {embedCode}
                         </pre>
                         <button
                           onClick={() => copy(embedCode, "embed")}
-                          className="mt-2 flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                          className="mt-2 flex items-center gap-1.5 rounded-lg border border-brand-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-brand-border-strong hover:bg-brand-canvas"
                         >
                           {copied === "embed" ? <Check size={13} /> : <Copy size={13} />}
                           {copied === "embed" ? "Copied embed code" : "Copy"}

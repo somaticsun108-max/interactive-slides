@@ -73,14 +73,14 @@ export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail:
 
   if (!slide) {
     return (
-      <main className="grid min-h-screen place-items-center bg-slate-50 text-sm text-slate-500">
+      <main className="grid min-h-screen place-items-center bg-brand-canvas text-sm text-slate-500">
         This deck has no slides.
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 pb-16">
+    <main className="min-h-screen bg-brand-pale pb-16">
       <AppHeader
         userEmail={userEmail}
         active="script-decks"
@@ -92,7 +92,7 @@ export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail:
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           {/* ---------- slide + transport ---------- */}
           <section>
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-slide">
+            <div className="overflow-hidden rounded-2xl border border-brand-border bg-white shadow-slide">
               <SlideFrame theme={theme} scale={scale}>
                 <SlideRenderer slide={slide} theme={theme} visibleSteps={showSteps ? undefined : 0} />
               </SlideFrame>
@@ -102,14 +102,14 @@ export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail:
               <button
                 onClick={() => setIndex((i) => Math.max(0, i - 1))}
                 disabled={index === 0}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-lg border border-brand-border bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-brand-canvas disabled:opacity-40"
               >
                 <ChevronLeft size={15} /> Prev
               </button>
               <button
                 onClick={() => setIndex((i) => Math.min(deck.slides.length - 1, i + 1))}
                 disabled={index === deck.slides.length - 1}
-                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-lg border border-brand-border bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-brand-canvas disabled:opacity-40"
               >
                 Next <ChevronRight size={15} />
               </button>
@@ -129,7 +129,7 @@ export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail:
                     type="checkbox"
                     checked={showSteps}
                     onChange={(event) => setShowSteps(event.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-slate-300"
+                    className="h-3.5 w-3.5 rounded border-brand-border-strong"
                   />
                   Reveal steps
                 </label>
@@ -148,8 +148,8 @@ export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail:
                       className={
                         "flex w-full items-start gap-2.5 rounded-xl border p-2.5 text-left transition " +
                         (entryIndex === index
-                          ? "border-indigo-300 bg-white ring-2 ring-indigo-500/15"
-                          : "border-slate-200 bg-white/70 hover:border-slate-300 hover:bg-white")
+                          ? "border-brand-blue/50 bg-white ring-2 ring-brand-blue/15"
+                          : "border-brand-border bg-white/70 hover:border-brand-border-strong hover:bg-white")
                       }
                     >
                       <span className="mt-0.5 w-5 shrink-0 text-right font-mono text-[11px] tabular-nums text-slate-400">
@@ -171,8 +171,8 @@ export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail:
 
           {/* ---------- narration (presenter-only surface) ---------- */}
           <aside className="lg:sticky lg:top-20 lg:h-fit">
-            <div className="rounded-2xl border border-slate-200 bg-white">
-              <header className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
+            <div className="rounded-2xl border border-brand-border bg-white">
+              <header className="flex items-center gap-2 border-b border-brand-border px-4 py-3">
                 <h2 className="flex-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-slate-400">
                   Narration
                 </h2>
@@ -184,12 +184,12 @@ export default function DeckViewer({ deck, userEmail }: { deck: Deck; userEmail:
                   {slide.notes.narration || <span className="text-slate-400">No narration for this slide.</span>}
                 </div>
               </div>
-              <footer className="border-t border-slate-100 px-4 py-2.5 text-[11px] text-slate-400">
+              <footer className="border-t border-brand-border-soft px-4 py-2.5 text-[11px] text-slate-400">
                 Narration is never shown in the audience window.
               </footer>
             </div>
 
-            <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 text-[12px] text-slate-500">
+            <div className="mt-3 rounded-2xl border border-brand-border bg-white p-4 text-[12px] text-slate-500">
               <p className="mb-1 font-semibold text-slate-700">Script provenance</p>
               <p className="break-all font-mono text-[10.5px] text-slate-400">
                 hash {deck.source.sourceHash.slice(0, 32)}…

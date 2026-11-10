@@ -30,11 +30,11 @@ export default function EmojiPicker({ onPick, onClose }: { onPick: (r: PickerRes
       onClick={onClose}
     >
       <div
-        className="animate-pop w-[420px] max-w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-float"
+        className="animate-pop w-[420px] max-w-full rounded-2xl border border-brand-border bg-white p-4 shadow-float"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 shadow-sm transition focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-500/10">
+          <div className="flex flex-1 items-center gap-2 rounded-lg border border-brand-border bg-white px-2.5 shadow-sm transition focus-within:border-brand-blue focus-within:ring-4 focus-within:ring-brand-blue/15">
             <Search size={14} className="text-slate-400" />
             <input
               autoFocus
@@ -49,7 +49,7 @@ export default function EmojiPicker({ onPick, onClose }: { onPick: (r: PickerRes
           </button>
         </div>
 
-        <div className="mb-3 flex gap-1 rounded-lg bg-slate-100 p-0.5">
+        <div className="mb-3 flex gap-1 rounded-lg bg-brand-pale p-0.5">
           <TabBtn active={tab === "emoji"} onClick={() => setTab("emoji")}>
             <Smile size={13} /> Emoji
           </TabBtn>
@@ -68,7 +68,7 @@ export default function EmojiPicker({ onPick, onClose }: { onPick: (r: PickerRes
                     <button
                       key={`${e}-${i}`}
                       onClick={() => onPick({ type: "emoji", emoji: e })}
-                      className="rounded-lg p-1.5 text-2xl leading-none transition hover:scale-110 hover:bg-indigo-50"
+                      className="rounded-lg p-1.5 text-2xl leading-none transition hover:scale-110 hover:bg-brand-pale"
                     >
                       {e}
                     </button>
@@ -87,7 +87,7 @@ export default function EmojiPicker({ onPick, onClose }: { onPick: (r: PickerRes
                     key={name}
                     title={name}
                     onClick={() => onPick({ type: "icon", icon: name })}
-                    className="grid place-items-center rounded-lg p-2 text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-600"
+                    className="grid place-items-center rounded-lg p-2 text-brand-muted transition hover:bg-brand-pale hover:text-brand-blue"
                   >
                     <Icon size={20} />
                   </button>

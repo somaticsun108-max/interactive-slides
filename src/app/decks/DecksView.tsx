@@ -28,11 +28,11 @@ export default function DecksView({
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-brand-canvas">
       <AppHeader userEmail={userEmail} active="script-decks">
         <button
           onClick={() => setDialogOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500"
+          className="sun-button !gap-1.5 !px-3.5 !py-2"
         >
           <Plus size={16} /> Import script
         </button>
@@ -52,18 +52,18 @@ export default function DecksView({
         ) : null}
 
         {decks.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-20 text-center">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-indigo-50 text-indigo-600">
+          <div className="rounded-2xl border border-dashed border-brand-border-strong bg-white/70 px-6 py-20 text-center">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-pale text-brand-blue">
               <FileText size={26} />
             </div>
             <h2 className="mt-4 text-lg font-semibold tracking-[-0.01em] text-slate-900">No script decks yet</h2>
             <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
-              Paste a script or upload a <code className="rounded bg-slate-100 px-1 py-0.5 text-[12px]">.md</code> file
+              Paste a script or upload a <code className="rounded bg-brand-pale px-1 py-0.5 text-[12px]">.md</code> file
               to generate your first deck.
             </p>
             <button
               onClick={() => setDialogOpen(true)}
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500"
+              className="sun-button mt-6"
             >
               <Plus size={16} /> Import a script
             </button>
@@ -73,10 +73,10 @@ export default function DecksView({
             {decks.map((deck) => (
               <div
                 key={deck.id}
-                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-float"
+                className="group relative overflow-hidden rounded-2xl border border-brand-border bg-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-brand-border-strong hover:shadow-float"
               >
                 <Link href={`/deck/${deck.id}`} className="block">
-                  <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+                  <div className="relative aspect-video w-full overflow-hidden bg-brand-pale">
                     {deck.firstSlide ? (
                       <SlideFrame theme={getTheme(deck.firstSlide.themeId)} scale={fitScale(400, 225, "cover")}>
                         <SlideRenderer slide={deck.firstSlide} theme={getTheme(deck.firstSlide.themeId)} />
@@ -84,7 +84,7 @@ export default function DecksView({
                     ) : null}
                   </div>
                 </Link>
-                <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3.5 py-3">
+                <div className="flex items-center justify-between gap-2 border-t border-brand-border-soft px-3.5 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold tracking-[-0.01em] text-slate-900" title={deck.title}>
                       {deck.title}
@@ -98,7 +98,7 @@ export default function DecksView({
                   </div>
                   <Link
                     href={`/present/control?deckId=${deck.id}`}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-brand-border px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-brand-border-strong hover:bg-brand-canvas hover:text-slate-900"
                     title="Open the presenter window"
                   >
                     <Presentation size={13} /> Present

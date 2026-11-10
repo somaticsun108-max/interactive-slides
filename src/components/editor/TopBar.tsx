@@ -59,21 +59,21 @@ export default function TopBar({ deckId, userEmail }: { deckId: string; userEmai
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white pl-3 pr-4">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-brand-border bg-white pl-3 pr-4">
       <div className="flex min-w-0 items-center gap-2">
         <BackToDecks />
         <span className="h-5 w-px bg-slate-200" />
         <input
           value={deck.title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-48 truncate rounded-lg border border-transparent px-2 py-1.5 text-[15px] font-semibold tracking-[-0.01em] text-slate-900 outline-none transition hover:border-slate-200 hover:bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 sm:w-64"
+          className="w-48 truncate rounded-lg border border-transparent px-2 py-1.5 text-[15px] font-semibold tracking-[-0.01em] text-slate-900 outline-none transition hover:border-brand-border-soft hover:bg-brand-pale/40 focus:border-brand-blue focus:bg-white focus:ring-4 focus:ring-brand-blue/15 sm:w-64"
           aria-label="Deck title"
         />
       </div>
 
       <div className="flex items-center gap-1.5">
         <ThemePicker value={deckTheme} onChange={setTheme} />
-        <div className="flex items-center gap-0.5 rounded-lg bg-slate-100 p-0.5">
+        <div className="flex items-center gap-0.5 rounded-lg bg-brand-pale p-0.5">
           <button
             onClick={undo}
             disabled={!canUndo}
@@ -111,7 +111,7 @@ export default function TopBar({ deckId, userEmail }: { deckId: string; userEmai
 
         <Link
           href={`/present?deck=${deckId}`}
-          className="ml-1 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500 active:translate-y-px"
+          className="sun-button ml-1 !px-3.5 !py-2"
         >
           <Presentation size={16} />
           <span className="hidden sm:inline">Present</span>
@@ -136,7 +136,7 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
   }
   if (status === "pending" || status === "saving") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-canvas px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
         Saving…
       </span>
@@ -153,7 +153,7 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
     );
   }
   return (
-    <span className="hidden items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200 sm:inline-flex">
+    <span className="hidden items-center gap-1.5 rounded-full bg-brand-canvas px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200 sm:inline-flex">
       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
       Saved
     </span>

@@ -18,12 +18,12 @@ export default async function ControlPage({ searchParams }: { searchParams: Prom
   const row = await getDeck(user.id, deckId);
   if (!row) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-50 text-center">
+      <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-brand-canvas text-center">
         <p className="text-sm font-semibold text-slate-800">Deck not found</p>
         <p className="max-w-sm text-sm text-slate-500">It may have been deleted, or it belongs to another account.</p>
         <Link
           href="/dashboard"
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+          className="sun-button"
         >
           Back to decks
         </Link>
