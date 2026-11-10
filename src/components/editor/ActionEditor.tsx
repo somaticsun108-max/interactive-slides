@@ -40,7 +40,7 @@ export default function ActionEditor({ obj }: { obj: SlideObject }) {
   const blocks = action.type === "popup" || action.type === "expand" ? action.blocks : null;
 
   return (
-    <div className="mt-6 border-t border-slate-100 pt-4">
+    <div className="mt-6 border-t border-brand-border-soft pt-4">
       <Section title="On click (action)">
         <div className="flex flex-wrap gap-1">
           <Choice active={action.type === "none"} onClick={() => pick("none")}>
@@ -144,7 +144,7 @@ export default function ActionEditor({ obj }: { obj: SlideObject }) {
         {action.type !== "none" && (
           <button
             onClick={() => run(obj, { gotoSlide: setCurrentSlide })}
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-500"
+            className="sun-button mt-3 !w-full !gap-1.5 !px-3 !py-2 !text-xs"
           >
             <Play size={12} /> Test action
           </button>
@@ -194,9 +194,9 @@ function BlockEditorRow({
   onMove: (dir: "up" | "down") => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-2">
+    <div className="rounded-lg border border-brand-border bg-brand-canvas/60 p-2">
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-indigo-500">{block.type}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-brand-gold-ink">{block.type}</span>
         <div className="flex gap-0.5">
           <MiniBtn disabled={first} onClick={() => onMove("up")} title="Move up">
             <ArrowUp size={11} />
@@ -290,7 +290,7 @@ function AddBtn({ onClick, children }: { onClick: () => void; children: React.Re
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-lg border border-dashed border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-500 transition hover:border-indigo-400 hover:bg-white hover:text-indigo-600"
+      className="inline-flex items-center gap-1 rounded-lg border border-dashed border-brand-border-strong px-2 py-1 text-[11px] font-medium text-brand-muted transition hover:border-brand-blue/60 hover:bg-white hover:text-brand-blue"
     >
       <Plus size={11} />
       {children}

@@ -48,7 +48,7 @@ export default function PacingBadge({
       title={title}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums",
-        tone === "chrome" ? "border-slate-200 bg-white/80 text-slate-500" : "",
+        tone === "chrome" ? "border-brand-border bg-white/80 text-slate-500" : "",
         className
       )}
       style={onSlide}

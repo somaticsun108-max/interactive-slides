@@ -118,14 +118,14 @@ export default function Toolbar() {
   }
 
   return (
-    <div className="flex items-center gap-0.5 border-b border-slate-200 bg-white px-2.5 py-1.5">
+    <div className="flex items-center gap-0.5 border-b border-brand-border bg-white px-2.5 py-1.5">
       <ToolButton onClick={addText} icon={<Type size={16} />} label="Text" />
       <ToolButton onClick={addImage} icon={<ImageIcon size={16} />} label="Image" />
       <ToolButton onClick={() => setPickerOpen(true)} icon={<Smile size={16} />} label="Sticker" />
       <div className="relative">
         <ToolButton onClick={() => setShapeOpen((v) => !v)} icon={<Square size={16} />} label="Shape" chevron />
         {shapeOpen && (
-          <div className="animate-pop absolute left-0 top-9 z-50 flex gap-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-float">
+          <div className="animate-pop absolute left-0 top-9 z-50 flex gap-0.5 rounded-xl border border-brand-border bg-white p-1 shadow-float">
             <IconBtn onClick={() => addShape("rect")} title="Rectangle">
               <Square size={16} />
             </IconBtn>
@@ -158,7 +158,7 @@ function ToolButton({
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-slate-600 transition hover:bg-brand-pale hover:text-slate-900"
     >
       {icon}
       {label}

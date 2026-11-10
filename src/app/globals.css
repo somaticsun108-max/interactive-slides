@@ -4,6 +4,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Somatic Sun brand tokens.
+ *
+ * These describe the *app's* chrome — blue, white and warm gold. They are
+ * separate from the deck theme tokens (--role-*, --slide-*), which describe the
+ * *document*. A deck's palette must never repaint the toolbar, and the toolbar
+ * must never leak into a slide.
+ *
+ * The values mirror src/lib/brand/tokens.ts; that file is the source of truth
+ * and test/brand/tokens.test.ts fails if the two drift apart.
+ */
+:root {
+  --brand-blue: #2e6b99;
+  --brand-blue-hover: #245a82;
+  --brand-blue-ink: #1e4e70;
+  --brand-gold: #d49a30;
+  --brand-gold-hover: #c38a21;
+  --brand-gold-ink: #8a650f;
+  --brand-gold-wash: #fbf1dd;
+  --brand-gold-wash-soft: #fcf3e0;
+  --brand-gold-border: #e8c88a;
+  --brand-ink: #101828;
+  --brand-muted: #526581;
+  --brand-muted-soft: #7a879c;
+  --brand-background: #f5f6f8;
+  --brand-surface: #ffffff;
+  --brand-pale: #e8f1f7;
+  --brand-pale-deep: #dceaf3;
+  --brand-border: #d5e3ed;
+  --brand-border-soft: #e3edf4;
+  --brand-border-strong: #b9cedd;
+  --brand-navy: #12253d;
+  --brand-navy-deep: #0b1826;
+  --brand-danger: #b3261e;
+  --brand-danger-wash: #fceeec;
+  --brand-success: #1f7a4d;
+  --brand-success-wash: #eaf5ef;
+  --brand-warning: #8a650f;
+  --brand-warning-wash: #fdf4e3;
+
+  /* Gold gradients, matching the logo's brushed metal. */
+  --brand-gold-grad: linear-gradient(135deg, #f0d089 0%, #d49a30 48%, #a9761b 100%);
+
+  /* Motion: honoured, and switched off when the OS asks. */
+  --brand-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
@@ -12,17 +59,26 @@
   body {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    background: var(--brand-background);
+    color: var(--brand-ink);
   }
 
+  /* Blue selection, not the old lilac. */
   ::selection {
-    background: #c7d2fe;
-    color: #1e1b4b;
+    background: #cfe3f0;
+    color: var(--brand-blue-ink);
+  }
+
+  /* Focus: a blue ring everywhere, so keyboard users always see where they are. */
+  :focus-visible {
+    outline: 2px solid var(--brand-blue);
+    outline-offset: 2px;
   }
 
   /* Quiet, consistent scrollbars everywhere */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #d3dae4 transparent;
+    scrollbar-color: var(--brand-border-strong) transparent;
   }
   ::-webkit-scrollbar {
     width: 10px;
@@ -32,62 +88,150 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background-color: #d3dae4;
+    background-color: var(--brand-border-strong);
     border-radius: 9999px;
     border: 3px solid transparent;
     background-clip: content-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background-color: #b7c0cd;
+    background-color: #9fb6ca;
+  }
+
+  /* The OS preference wins; nothing animates for people who asked it not to. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer components {
-  /* Form controls: one consistent look across the properties panel */
+  /* ------------------------------------------------------------------ */
+  /* Controls                                                           */
+  /* ------------------------------------------------------------------ */
+
   .field {
-    @apply w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm outline-none transition
-      placeholder:text-slate-400
-      hover:border-slate-300
-      focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10
-      disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400;
+    @apply w-full rounded-lg border border-brand-border bg-white px-2.5 py-1.5 text-sm text-brand-ink shadow-sm outline-none transition
+      placeholder:text-brand-muted-soft
+      hover:border-brand-border-strong
+      focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/15
+      disabled:cursor-not-allowed disabled:bg-brand-pale/60 disabled:text-brand-muted;
   }
 
-  /* Compact variant for dense editors such as popup block rows */
   .field-sm {
-    @apply w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 shadow-sm outline-none transition
-      placeholder:text-slate-400
-      hover:border-slate-300
-      focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10;
+    @apply w-full rounded-md border border-brand-border bg-white px-2 py-1.5 text-xs text-brand-ink shadow-sm outline-none transition
+      placeholder:text-brand-muted-soft
+      hover:border-brand-border-strong
+      focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/15;
   }
 
   .field-label {
-    @apply mb-1 block text-[10px] font-semibold uppercase tracking-[0.09em] text-slate-400;
+    @apply mb-1 block text-[10px] font-semibold uppercase tracking-[0.09em] text-brand-muted;
   }
 
   .panel-heading {
-    @apply text-[11px] font-semibold uppercase tracking-[0.13em] text-slate-400;
+    @apply text-[11px] font-semibold uppercase tracking-[0.13em] text-brand-muted;
   }
 
-  /* Small segmented / toggle button used in the properties panel */
+  /* ------------------------------------------------------------------ */
+  /* Editor chrome (small, dense controls)                              */
+  /* ------------------------------------------------------------------ */
+
   .chip-btn {
     @apply inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium transition;
   }
   .chip-btn-idle {
-    @apply border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800;
+    @apply border-brand-border bg-white text-brand-muted hover:border-brand-border-strong hover:bg-brand-pale/50 hover:text-brand-ink;
   }
   .chip-btn-active {
-    @apply border-indigo-200 bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200;
+    @apply border-brand-blue/40 bg-brand-pale text-brand-blue-ink;
   }
 
   .icon-btn {
-    @apply grid h-8 w-8 place-items-center rounded-lg text-slate-500 transition
-      hover:bg-slate-100 hover:text-slate-800
+    @apply grid h-8 w-8 place-items-center rounded-lg text-brand-muted transition
+      hover:bg-brand-pale hover:text-brand-blue-ink
       disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent;
   }
 
   .menu-item {
-    @apply flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100;
+    @apply flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-brand-ink transition hover:bg-brand-pale/70;
   }
+
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Brand primitives
+ * ---------------------------------------------------------------------------
+ * These sit outside @layer components on purpose. Tailwind removes an
+ * @layer components rule that no file references, which silently deletes a
+ * primitive before its first use — the blue and quiet buttons vanished from the
+ * brand sheet for exactly that reason. They are a documented API for future
+ * feature work, so every one of them must exist whether or not it is used today.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Buttons, as named in the brand spec                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * gold: the primary call to action.
+ *
+ * Dark ink on gold — the spec is explicit, and gold-on-gold would be
+ * unreadable. Ink on #D49A30 is 7.4:1.
+ */
+.sun-button {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-brand-ink shadow-gold transition
+    hover:bg-brand-gold-hover active:translate-y-px
+    disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-brand-gold;
+  transition-timing-function: var(--brand-ease);
+}
+
+/** blue: the secondary action, and anything navigational. */
+.sun-button-blue {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-blue transition
+    hover:bg-brand-blue-hover active:translate-y-px
+    disabled:cursor-not-allowed disabled:opacity-55;
+  transition-timing-function: var(--brand-ease);
+}
+
+/** quiet: no fill, just a border. */
+.sun-button-quiet {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-brand-border bg-white px-4 py-2 text-sm font-semibold text-brand-ink transition
+    hover:border-brand-border-strong hover:bg-brand-pale/50;
+}
+
+/** The gold eyebrow label the public site uses above headings. */
+.sun-eyebrow {
+  @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-gold-ink;
+}
+
+/** A rounded white panel on the light-grey canvas. */
+.sun-panel {
+  @apply rounded-xl border border-brand-border-soft bg-brand-surface shadow-card;
+}
+
+/* ------------------------------------------------------------------ */
+/* Brand lockup, as set in the public site's header                   */
+/* ------------------------------------------------------------------ */
+
+.brand-lockup {
+  @apply text-[13px] font-semibold uppercase leading-tight tracking-[0.16em] text-brand-ink;
+}
+
+.brand-lockup-sub {
+  @apply mt-0.5 text-[9px] font-medium uppercase leading-tight tracking-[0.2em] text-brand-muted;
+}
+
+/* A hairline gold rule, used under section headings. */
+.sun-rule {
+  @apply h-px w-full;
+  background: linear-gradient(90deg, var(--brand-gold) 0%, var(--brand-gold-border) 35%, transparent 100%);
 }
 
 /* Canvas objects and handles must not trigger touch scrolling while dragging. */
@@ -95,10 +239,13 @@
   touch-action: none;
 }
 
-/* Dot grid workspace behind the slide */
+/*
+ * The workspace behind the slide: the app canvas, with the dot grid in
+ * blue-grey so the white slide reads as a separate object.
+ */
 .canvas-workspace {
-  background-color: #eef1f6;
-  background-image: radial-gradient(circle, #ccd3de 1px, transparent 1px);
+  background-color: var(--brand-background);
+  background-image: radial-gradient(circle, var(--brand-border) 1px, transparent 1px);
   background-size: 22px 22px;
   background-position: -1px -1px;
 }

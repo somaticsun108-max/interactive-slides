@@ -97,7 +97,7 @@ function TextEditor({ obj }: { obj: SlideObject }) {
         if (e.key === "Escape") e.currentTarget.blur();
         e.stopPropagation();
       }}
-      className="h-full w-full resize-none bg-white/60 outline outline-2 outline-indigo-500"
+      className="h-full w-full resize-none bg-white/60 outline outline-2 outline-brand-blue"
       style={{
         fontSize: t.fontSize,
         color: t.color,

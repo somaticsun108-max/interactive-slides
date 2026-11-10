@@ -42,7 +42,7 @@ function MoodOption({
       aria-checked={selected}
       onClick={onSelect}
       data-testid={`mood-option-${mood}`}
-      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-slate-50"
+      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-brand-canvas"
     >
       <span aria-hidden className="flex shrink-0 -space-x-1">
         {dotsFor(mood, null).map((colour, index) => (
@@ -56,7 +56,7 @@ function MoodOption({
       <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-slate-800">
         {MOOD_LABELS[mood]}
       </span>
-      {selected ? <Check size={13} className="shrink-0 text-indigo-600" /> : null}
+      {selected ? <Check size={13} className="shrink-0 text-brand-blue" /> : null}
       <span
         aria-hidden
         className="h-3 w-3 shrink-0 rounded-sm ring-1 ring-inset ring-black/10"
@@ -130,7 +130,7 @@ export default function ThemePicker({
         aria-expanded={open}
         data-testid="theme-picker-button"
         title="Theme"
-        className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[13px] font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+        className="flex h-8 items-center gap-1.5 rounded-lg border border-brand-border bg-white px-2.5 text-[13px] font-medium text-slate-700 transition hover:border-brand-border-strong hover:bg-brand-canvas"
       >
         <Palette size={15} className="text-slate-500" />
         <span className="hidden max-w-[9rem] truncate sm:inline">{activeLabel}</span>
@@ -150,10 +150,10 @@ export default function ThemePicker({
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-1.5 w-[21rem] rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10"
+          className="absolute right-0 z-50 mt-1.5 w-[21rem] rounded-xl border border-brand-border bg-white p-1.5 shadow-xl shadow-slate-900/10"
         >
           {/* Tabs keep the three controls visibly separate. */}
-          <div className="mb-1 flex gap-0.5 rounded-lg bg-slate-100 p-0.5" data-testid="theme-tabs">
+          <div className="mb-1 flex gap-0.5 rounded-lg bg-brand-pale p-0.5" data-testid="theme-tabs">
             {(["colour", "canvas", "look"] as const).map((id) => (
               <button
                 key={id}
@@ -206,7 +206,7 @@ export default function ThemePicker({
                 />
               ))}
 
-              <div className="mx-1 my-1.5 border-t border-slate-100" />
+              <div className="mx-1 my-1.5 border-t border-brand-border-soft" />
 
               <div className="px-2.5 py-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
@@ -237,7 +237,7 @@ export default function ThemePicker({
                     className={`ml-auto rounded-md border px-2 py-1 text-[11px] font-medium transition ${
                       isCustom
                         ? "border-slate-900 bg-slate-900 text-white"
-                        : "border-slate-200 text-slate-600 hover:border-slate-300"
+                        : "border-brand-border text-slate-600 hover:border-brand-border-strong"
                     }`}
                   >
                     {isCustom ? "In use" : "Use this"}
@@ -263,14 +263,14 @@ export default function ThemePicker({
                 </p>
               </div>
 
-              <div className="mx-1 my-1.5 border-t border-slate-100" />
+              <div className="mx-1 my-1.5 border-t border-brand-border-soft" />
 
               <div className="px-2.5 py-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                   Text on fills
                 </p>
                 <div
-                  className="mt-1.5 flex gap-1 rounded-lg bg-slate-100 p-0.5"
+                  className="mt-1.5 flex gap-1 rounded-lg bg-brand-pale p-0.5"
                   data-testid="faithful-toggle"
                 >
                   <button
@@ -314,7 +314,7 @@ export default function ThemePicker({
                     type="button"
                     onClick={() => onChange({ background: null })}
                     data-testid="reset-background"
-                    className="text-[11px] font-medium text-indigo-600 hover:underline"
+                    className="text-[11px] font-medium text-brand-blue hover:underline"
                   >
                     Reset to theme
                   </button>
@@ -384,8 +384,8 @@ export default function ThemePicker({
                       onClick={() => onChange({ appearance: id })}
                       aria-pressed={selected}
                       data-testid={`appearance-option-${id}`}
-                      className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-slate-50 ${
-                        selected ? "bg-slate-50" : ""
+                      className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-brand-canvas ${
+                        selected ? "bg-brand-canvas" : ""
                       }`}
                     >
                       <span
@@ -399,7 +399,7 @@ export default function ThemePicker({
                       <span className="min-w-0 flex-1 text-[13px] font-medium text-slate-800">
                         {APPEARANCE_LABELS[id]}
                       </span>
-                      {selected ? <Check size={13} className="text-indigo-600" /> : null}
+                      {selected ? <Check size={13} className="text-brand-blue" /> : null}
                     </button>
                   );
                 })}

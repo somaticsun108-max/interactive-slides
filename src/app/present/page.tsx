@@ -27,12 +27,12 @@ export default async function PresentPage({ searchParams }: { searchParams: Prom
 
   if (!deck) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-1 bg-slate-50 p-6 text-center">
+      <main className="flex min-h-screen flex-col items-center justify-center gap-1 bg-brand-canvas p-6 text-center">
         <p className="text-lg font-semibold tracking-[-0.01em] text-slate-800">Deck not found</p>
         <p className="max-w-sm text-sm text-slate-500">It may have been deleted, or it belongs to another account.</p>
         <Link
           href="/dashboard"
-          className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500"
+          className="sun-button mt-3"
         >
           Back to My Decks
         </Link>

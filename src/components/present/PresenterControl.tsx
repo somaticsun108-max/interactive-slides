@@ -40,7 +40,7 @@ function Thumbnail({ deck, index, label, visibleSteps }: { deck: Deck; index: nu
         <span>{label}</span>
         {slide ? <span className="font-mono text-slate-400">{slide.layoutId}</span> : null}
       </figcaption>
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-brand-border bg-white shadow-sm">
         {slide ? (
           <SlideFrame theme={theme} scale={scale} testId="presenter-thumbnail">
             <SlideRenderer slide={slide} theme={theme} visibleSteps={visibleSteps} />
@@ -77,8 +77,8 @@ function CtrlButton({
       className={
         "inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-35 " +
         (active
-          ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-          : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50")
+          ? "border-brand-blue/30 bg-brand-pale text-brand-blue-ink"
+          : "border-brand-border bg-white text-slate-700 hover:border-brand-border-strong hover:bg-brand-canvas")
       }
     >
       {children}
@@ -148,8 +148,8 @@ export default function PresenterControl({ deck }: { deck: Deck }) {
   const overtime = session.slideOvertime > 0;
 
   return (
-    <main className="min-h-screen bg-slate-100" data-testid="presenter-control">
-      <header className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-5 py-3">
+    <main className="min-h-screen bg-brand-pale" data-testid="presenter-control">
+      <header className="flex flex-wrap items-center gap-3 border-b border-brand-border bg-white px-5 py-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-slate-800">{deck.title}</p>
           <p className="text-[11px] uppercase tracking-[0.1em] text-slate-400">Presenter</p>
@@ -160,7 +160,7 @@ export default function PresenterControl({ deck }: { deck: Deck }) {
             {position.slideIndex + 1} / {deck.slides.length}
           </span>
           {stepCount > 0 ? (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-500">
+            <span className="rounded-full bg-brand-pale px-2 py-0.5 font-mono text-[11px] text-slate-500">
               step {position.stepIndex + 1}/{stepCount}
             </span>
           ) : null}
@@ -173,7 +173,7 @@ export default function PresenterControl({ deck }: { deck: Deck }) {
 
         <Link
           href={`/deck/${deck.id}`}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          className="rounded-lg border border-brand-border bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-brand-canvas"
         >
           Back to deck
         </Link>
@@ -192,7 +192,7 @@ export default function PresenterControl({ deck }: { deck: Deck }) {
             <Thumbnail deck={deck} index={position.slideIndex + 1} label="Next" />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand-border bg-white p-3">
             <CtrlButton onClick={session.prevSlide} label="Previous slide" disabled={position.slideIndex === 0}>
               <ChevronsLeft size={16} />
             </CtrlButton>
@@ -216,7 +216,7 @@ export default function PresenterControl({ deck }: { deck: Deck }) {
           </div>
 
           {/* timer */}
-          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-brand-border bg-white p-4">
             <div className="flex items-center gap-2">
               <Timer size={16} className="text-slate-400" />
               <span className="font-mono text-2xl tabular-nums text-slate-800" data-testid="elapsed">
@@ -227,7 +227,7 @@ export default function PresenterControl({ deck }: { deck: Deck }) {
               </span>
             </div>
 
-            <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
+            <div className="flex items-center gap-2 border-l border-brand-border pl-4">
               <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">Target</span>
               <input
                 aria-label="Target time for this slide"
@@ -267,8 +267,8 @@ export default function PresenterControl({ deck }: { deck: Deck }) {
         </section>
 
         {/* ---------- right: narration ---------- */}
-        <section className="flex min-h-[420px] flex-col rounded-xl border border-slate-200 bg-white">
-          <header className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
+        <section className="flex min-h-[420px] flex-col rounded-xl border border-brand-border bg-white">
+          <header className="flex items-center gap-2 border-b border-brand-border px-4 py-3">
             <h2 className="flex-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-slate-400">Narration</h2>
             <PacingBadge slide={slide} />
             <div className="flex items-center gap-1">
@@ -305,7 +305,7 @@ export default function PresenterControl({ deck }: { deck: Deck }) {
             </div>
           </div>
 
-          <footer className="border-t border-slate-200 px-4 py-2.5 text-[11px] text-slate-400">
+          <footer className="border-t border-brand-border px-4 py-2.5 text-[11px] text-slate-400">
             {nextSlide ? (
               <>
                 Up next: <span className="font-medium text-slate-500">{nextSlide.headline}</span>

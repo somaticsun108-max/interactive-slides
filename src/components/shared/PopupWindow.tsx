@@ -60,7 +60,7 @@ export default function PopupWindow({
     >
       <div
         onPointerDown={onHeaderPointerDown}
-        className="no-touch flex cursor-grab items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2 active:cursor-grabbing"
+        className="no-touch flex cursor-grab items-center justify-between gap-2 border-b border-brand-border-soft bg-brand-canvas px-3 py-2 active:cursor-grabbing"
       >
         <span className="truncate text-sm font-semibold text-slate-800">{title}</span>
         <button

@@ -96,7 +96,7 @@ export default function ThemeColorPicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         data-testid={`colour-button-${label.toLowerCase().replace(/\s+/g, "-")}`}
-        className="flex h-8 w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-1.5 shadow-sm transition hover:border-slate-300"
+        className="flex h-8 w-full items-center gap-2 rounded-lg border border-brand-border bg-white px-1.5 shadow-sm transition hover:border-brand-border-strong"
       >
         <span
           aria-hidden
@@ -110,7 +110,7 @@ export default function ThemeColorPicker({
         <div
           role="dialog"
           aria-label={`${label} palette`}
-          className="absolute left-0 top-full z-50 mt-1.5 w-60 rounded-xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10"
+          className="absolute left-0 top-full z-50 mt-1.5 w-60 rounded-xl border border-brand-border bg-white p-2 shadow-xl shadow-slate-900/10"
         >
           {onReset ? (
             <button
@@ -120,7 +120,7 @@ export default function ThemeColorPicker({
                 setOpen(false);
               }}
               data-testid={`colour-reset-${label.toLowerCase().replace(/\s+/g, "-")}`}
-              className="mb-1.5 flex w-full items-center gap-1.5 rounded-md border border-slate-200 px-1.5 py-1 text-left text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+              className="mb-1.5 flex w-full items-center gap-1.5 rounded-md border border-brand-border px-1.5 py-1 text-left text-[11px] font-medium text-slate-600 transition hover:border-brand-border-strong hover:bg-brand-canvas"
             >
               <span
                 aria-hidden
@@ -177,7 +177,7 @@ export default function ThemeColorPicker({
           <button
             type="button"
             onClick={() => setAdvanced((a) => !a)}
-            className="mt-1 w-full rounded-md px-1 py-1 text-left text-[11px] font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
+            className="mt-1 w-full rounded-md px-1 py-1 text-left text-[11px] font-medium text-slate-500 transition hover:bg-brand-canvas hover:text-slate-800"
           >
             {advanced ? "Hide exact colour" : "Exact colour…"}
           </button>
@@ -188,13 +188,13 @@ export default function ThemeColorPicker({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 aria-label={`${label} exact colour`}
-                className="h-7 w-9 cursor-pointer rounded border border-slate-200 bg-white p-0.5"
+                className="h-7 w-9 cursor-pointer rounded border border-brand-border bg-white p-0.5"
               />
               <input
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 aria-label={`${label} hex value`}
-                className="h-7 min-w-0 flex-1 rounded-md border border-slate-200 px-1.5 font-mono text-[11px] uppercase text-slate-700"
+                className="h-7 min-w-0 flex-1 rounded-md border border-brand-border px-1.5 font-mono text-[11px] uppercase text-slate-700"
               />
             </div>
           ) : null}

@@ -13,12 +13,12 @@ export default function BlockView({ block }: { block: PopupBlock }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={block.src} alt={block.alt ?? ""} className="max-h-64 w-full rounded-lg object-cover" />
       ) : (
-        <div className="rounded-lg bg-slate-100 p-4 text-center text-sm text-slate-400">Empty image block</div>
+        <div className="rounded-lg bg-brand-pale p-4 text-center text-sm text-slate-400">Empty image block</div>
       );
     case "youtube":
       if (!isValidYouTubeId(block.videoId)) {
         return (
-          <div className="flex aspect-video items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-400">
+          <div className="flex aspect-video items-center justify-center rounded-lg bg-brand-pale text-sm text-slate-400">
             Invalid YouTube video
           </div>
         );
@@ -40,7 +40,7 @@ export default function BlockView({ block }: { block: PopupBlock }) {
           href={block.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+          className="inline-flex items-center gap-1 rounded-lg bg-brand-pale px-3 py-1.5 text-sm font-medium text-brand-blue-ink hover:bg-brand-pale-deep"
         >
           {block.label || block.url} ↗
         </a>

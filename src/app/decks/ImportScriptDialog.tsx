@@ -122,10 +122,10 @@ export default function ImportScriptDialog({
         role="dialog"
         aria-modal="true"
         aria-label="Import a script"
-        className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-float"
+        className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-brand-border bg-white shadow-float"
       >
-        <header className="flex items-center gap-3 border-b border-slate-200 px-5 py-3.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600">
+        <header className="flex items-center gap-3 border-b border-brand-border px-5 py-3.5">
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-brand-pale text-brand-blue">
             <FileText size={16} />
           </div>
           <div className="flex-1">
@@ -139,12 +139,12 @@ export default function ImportScriptDialog({
 
         <div className="grid min-h-0 flex-1 gap-0 overflow-hidden md:grid-cols-2">
           {/* ---------- input ---------- */}
-          <div className="flex min-h-0 flex-col gap-3 overflow-auto border-slate-200 p-5 md:border-r">
+          <div className="flex min-h-0 flex-col gap-3 overflow-auto border-brand-border p-5 md:border-r">
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-lg border border-brand-border bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-brand-border-strong hover:bg-brand-canvas"
               >
                 <Upload size={15} /> Choose .md file
               </button>
@@ -206,9 +206,9 @@ export default function ImportScriptDialog({
 
           {/* ---------- validation + preview ---------- */}
           <div className="flex min-h-0 flex-col">
-            <div className="max-h-[46%] shrink-0 overflow-auto border-b border-slate-200 bg-slate-50/60">
+            <div className="max-h-[46%] shrink-0 overflow-auto border-b border-brand-border bg-brand-canvas/60">
               {errors.length > 0 ? (
-                <ul className="divide-y divide-slate-100" aria-label="Validation errors">
+                <ul className="divide-y divide-brand-border-soft" aria-label="Validation errors">
                   {errors.map((error, index) => (
                     <li key={`${error.rule}-${error.line}-${index}`} className="flex items-start gap-2 px-4 py-2">
                       <AlertTriangle size={14} className="mt-0.5 shrink-0 text-rose-500" />
@@ -222,7 +222,7 @@ export default function ImportScriptDialog({
                       <button
                         type="button"
                         onClick={() => jumpToLine(error.line)}
-                        className="shrink-0 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                        className="shrink-0 rounded-md border border-brand-border bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 transition hover:border-brand-border-strong hover:text-slate-900"
                       >
                         Jump to line
                       </button>
@@ -232,7 +232,7 @@ export default function ImportScriptDialog({
               ) : null}
 
               {warnings.length > 0 ? (
-                <ul className="divide-y divide-slate-100" aria-label="Warnings">
+                <ul className="divide-y divide-brand-border-soft" aria-label="Warnings">
                   {warnings.map((warning, index) => (
                     <li key={`${warning.rule}-${warning.line}-${index}`} className="flex items-start gap-2 px-4 py-2">
                       <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-500" />
@@ -283,7 +283,7 @@ export default function ImportScriptDialog({
           </div>
         </div>
 
-        <footer className="flex flex-wrap items-center gap-3 border-t border-slate-200 px-5 py-3">
+        <footer className="flex flex-wrap items-center gap-3 border-t border-brand-border px-5 py-3">
           {serverError ? <p className="text-sm text-rose-600">{serverError}</p> : null}
           <p className="flex-1 text-xs text-slate-400">
             {errors.length > 0
@@ -295,7 +295,7 @@ export default function ImportScriptDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-brand-pale hover:text-slate-800"
           >
             Cancel
           </button>
@@ -304,7 +304,7 @@ export default function ImportScriptDialog({
             onClick={doImport}
             disabled={!canImport}
             title={!result.ok ? "Fix the validation errors first" : undefined}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="sun-button !px-4 !py-2"
           >
             {importing ? "Importing…" : "Import"}
           </button>

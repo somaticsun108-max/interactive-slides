@@ -67,12 +67,12 @@ export default function ResizeFrame({
       className="pointer-events-none absolute"
       style={{ left: obj.x, top: obj.y, width: obj.w, height: obj.h, zIndex: 9999 }}
     >
-      <div className="absolute inset-0 outline outline-2 outline-indigo-500" />
+      <div className="absolute inset-0 outline outline-2 outline-brand-blue" />
       {HANDLES.map((h) => (
         <div
           key={h.dir}
           onPointerDown={(e) => onPointerDown(e, h.dir)}
-          className="pointer-events-auto absolute h-3 w-3 rounded-sm border-2 border-indigo-500 bg-white no-touch"
+          className="pointer-events-auto absolute h-3 w-3 rounded-sm border-2 border-brand-blue bg-white no-touch"
           style={{ ...h.style, cursor: h.cursor }}
         />
       ))}

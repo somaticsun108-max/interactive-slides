@@ -36,13 +36,13 @@ export default function SlideList() {
   }
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-slate-200 bg-white">
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-slate-100 pl-4 pr-2">
+    <aside className="flex w-56 shrink-0 flex-col border-r border-brand-border bg-white">
+      <div className="flex h-11 shrink-0 items-center justify-between border-b border-brand-border-soft pl-4 pr-2">
         <h2 className="panel-heading">Slides</h2>
         <button
           onClick={() => setPickerOpen(true)}
           title="Add slide from template"
-          className="grid h-7 w-7 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+          className="grid h-7 w-7 place-items-center rounded-lg text-slate-500 transition hover:bg-brand-pale hover:text-slate-800"
         >
           <Plus size={16} />
         </button>
@@ -95,8 +95,8 @@ function SortableThumb({
       className={cn(
         "group relative cursor-grab rounded-xl border p-1 transition duration-150",
         active
-          ? "border-indigo-500 bg-indigo-50/40 shadow-sm ring-4 ring-indigo-500/10"
-          : "border-slate-200 hover:border-slate-300 hover:shadow-sm",
+          ? "border-brand-blue bg-brand-pale/50 shadow-sm ring-4 ring-brand-blue/12"
+          : "border-brand-border hover:border-brand-border-strong hover:shadow-sm",
         isDragging && "opacity-50"
       )}
       style={{ transform: CSS.Transform.toString(transform), transition }}
@@ -107,7 +107,7 @@ function SortableThumb({
       <div
         className={cn(
           "absolute left-2 top-2 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums backdrop-blur-sm",
-          active ? "bg-indigo-600 text-white" : "bg-slate-900/55 text-white"
+          active ? "bg-brand-gold text-brand-ink" : "bg-brand-navy/55 text-white"
         )}
       >
         {index + 1}
@@ -121,7 +121,7 @@ function SortableThumb({
             onDuplicate();
           }}
           title="Duplicate slide"
-          className="grid h-6 w-6 place-items-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-indigo-600"
+          className="grid h-6 w-6 place-items-center rounded-md text-brand-muted transition hover:bg-brand-pale hover:text-brand-blue"
         >
           <Copy size={12} />
         </button>
