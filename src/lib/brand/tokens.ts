@@ -57,19 +57,6 @@ export const BRAND = {
   navyDeep: "#0B1826",
 } as const;
 
-/** The brand mark's gradient stops (from the logo artwork). */
-export const GOLD_GRADIENT = {
-  from: "#F0D089",
-  via: "#D49A30",
-  to: "#A9761B",
-} as const;
-
-/**
- * The mark's specular highlight — the warm white where light catches the ring.
- * Not a brand role, only ever used inside the logo artwork.
- */
-export const GOLD_HIGHLIGHT = "#FFF3D0";
-
 export type BrandToken = keyof typeof BRAND;
 
 /** `--brand-blue` for a token name. */

@@ -1,78 +1,184 @@
 #!/usr/bin/env python3
-"""Rasterise the brand mark.
+"""Rasterise the Somatic Sun mark.
 
-Called by scripts/build-brand-icons.mjs. ImageMagick here cannot read SVG (no
-rsvg delegate), so the shapes are drawn directly with Pillow — which also means
-the sun's gold gradient can be reproduced exactly as the artwork has it.
+Called by scripts/build-brand-icons.mjs. The geometry is not re-derived here:
+it is read back from the SVG that `logo.ts` generates, so the rarest icon — the
+16px tab — is the same artwork as the header, just at a different size.
 
-Writes:
-  src/app/favicon.ico           16/32/48/64, legacy browsers
-  src/app/apple-icon.png        180px square, for iOS home screens
-  src/app/icon.png              512px, fallback for browsers without SVG icons
-  public/brand/sun-{1024,512,180}.png
+ImageMagick in this environment has no SVG delegate (and installing one needs
+network access we do not have), so the SVG is parsed with a small dedicated
+renderer that covers exactly the constructs the mark uses: a stroked circle, a
+filled path built from M/L/V/H/Q/Z, and a filled circle with a filled triangle.
 
-The single-colour lockup is only ever used as SVG (public/brand/sun-mono-*.svg),
-drawn by build-brand-icons.mjs from the same geometry as the React component, so
-there is no raster copy to drift.
+That is deliberately not a general SVG renderer. It handles this file, and
+`render()` raises if it meets a construct it does not understand rather than
+silently drawing something wrong.
 """
+import re
+import sys
 import math
 from PIL import Image, ImageDraw
 
-NAVY = (18, 37, 61, 255)
-GOLD_L, GOLD_M, GOLD_D = (240, 208, 137), (212, 154, 48), (169, 118, 27)
+
+# ---------------------------------------------------------------- SVG parsing
+
+def _numbers(text):
+    return [float(v) for v in re.findall(r"-?\d*\.?\d+", text)]
 
 
-def lerp(a, b, t):
-    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+class Path:
+    """A path in the mark's 64-unit space, as a list of subpaths of points.
+
+    Curves are flattened to line segments; at icon sizes (16-1024px) the
+    subdivision is far below one output pixel, so the result is exact enough.
+    """
+
+    def __init__(self, d, steps=24):
+        self.polys = []
+        self._run(d, steps)
+
+    def _run(self, d, steps):
+        tokens = re.findall(r"[MmLlVvHhQqZzCc]|-?\d*\.?\d+", d)
+        i = 0
+        cur = (0.0, 0.0)
+        start = (0.0, 0.0)
+        poly = []
+        cmd = None
+
+        def num():
+            nonlocal i
+            v = float(tokens[i]); i += 1
+            return v
+
+        while i < len(tokens):
+            if re.fullmatch(r"[A-Za-z]", tokens[i]):
+                cmd = tokens[i]; i += 1
+                if cmd in "Zz":
+                    if poly:
+                        poly.append(start)
+                        self.polys.append(poly)
+                        poly = []
+                    cur = start
+                    continue
+                if cmd in "Mm":
+                    if poly:
+                        self.polys.append(poly)
+                        poly = []
+                    x, y = num(), num()
+                    if cmd == "m":
+                        x, y = cur[0] + x, cur[1] + y
+                    cur = start = (x, y)
+                    poly = [cur]
+                    cmd = "L" if cmd == "M" else "l"
+                    continue
+                continue
+            if cmd in "Ll":
+                x, y = num(), num()
+                if cmd == "l": x, y = cur[0] + x, cur[1] + y
+                cur = (x, y); poly.append(cur)
+            elif cmd in "Vv":
+                y = num()
+                if cmd == "v": y = cur[1] + y
+                cur = (cur[0], y); poly.append(cur)
+            elif cmd in "Hh":
+                x = num()
+                if cmd == "h": x = cur[0] + x
+                cur = (x, cur[1]); poly.append(cur)
+            elif cmd in "Qq":
+                cx, cy, x, y = num(), num(), num(), num()
+                if cmd == "q":
+                    cx, cy, x, y = cur[0] + cx, cur[1] + cy, cur[0] + x, cur[1] + y
+                p0 = cur
+                for s in range(1, steps + 1):
+                    t = s / steps
+                    mt = 1 - t
+                    bx = mt * mt * p0[0] + 2 * mt * t * cx + t * t * x
+                    by = mt * mt * p0[1] + 2 * mt * t * cy + t * t * y
+                    poly.append((bx, by))
+                cur = (x, y)
+            else:
+                raise NotImplementedError(f"path command {cmd!r} is not supported")
+        if poly:
+            self.polys.append(poly)
 
 
-def gold_at(t):
-    """Three-stop brushed-metal gradient, same stops as GOLD_GRADIENT."""
-    t = min(1.0, max(0.0, t))
-    return lerp(GOLD_L, GOLD_M, t * 2) if t < 0.5 else lerp(GOLD_M, GOLD_D, (t - 0.5) * 2)
+def parse_svg(svg):
+    """Pull the drawable parts out of the mark's SVG string."""
+    vb = re.search(r'viewBox="([^"]+)"', svg).group(1)
+    _, _, vbw, vbh = [float(v) for v in vb.split()]
+    parts = []
+    for m in re.finditer(r"<(circle|path|rect)\b([^>]*)/?>", svg):
+        kind, attrs = m.group(1), m.group(2)
+        get = lambda k: (re.search(rf'{k}="([^"]*)"', attrs) or [None, None])[1]
+        fill, stroke = get("fill"), get("stroke")
+        if kind == "rect":
+            parts.append(("rect", {
+                "w": float(get("width")), "h": float(get("height")),
+                "rx": float(get("rx") or 0), "fill": fill,
+            }))
+        elif kind == "circle":
+            parts.append(("circle", {
+                "cx": float(get("cx")), "cy": float(get("cy")), "r": float(get("r")),
+                "fill": fill, "stroke": stroke,
+                "width": float(get("stroke-width") or 0),
+            }))
+        elif kind == "path":
+            d = get("d")
+            transform = get("transform")
+            poly = Path(d)
+            if transform:
+                tx, ty = _numbers(transform)
+                poly.polys = [[(x + tx, y + ty) for (x, y) in p] for p in poly.polys]
+            parts.append(("path", {"polys": poly.polys, "fill": fill}))
+    return vbw, parts
 
 
-def sun(size, ground=True, ss=4):
-    """Gold disc with 12 rays, optionally on a rounded navy ground."""
+# ------------------------------------------------------------------ rendering
+
+def render(svg, size, ss=4):
+    vbw, parts = parse_svg(svg)
     S = size * ss
+    k = S / vbw
     img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    if ground:
-        d.rounded_rectangle([0, 0, S - 1, S - 1], radius=int(S * 0.22), fill=NAVY)
-    cx = cy = S / 2
-    disc_r = S * 0.172
 
-    # The disc, filled with the gold gradient through an elliptical mask.
-    mask = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(mask).ellipse([cx - disc_r, cy - disc_r, cx + disc_r, cy + disc_r], fill=255)
-    grad = Image.new("RGBA", (S, S))
-    gd = ImageDraw.Draw(grad)
-    for x in range(S):
-        gd.line([(x, 0), (x, S)], fill=gold_at(x / (S - 1)) + (255,))
-    img.paste(grad, (0, 0), mask)
-
-    # Rays: every third one longer and thicker, as in the artwork.
-    for i in range(12):
-        ang = i * math.pi / 6
-        inner = S * 0.272
-        outer = S * (0.42 if i % 3 == 0 else 0.365)
-        w = int(S * (0.052 if i % 3 == 0 else 0.037))
-        x1, y1 = cx + math.cos(ang) * inner, cy + math.sin(ang) * inner
-        x2, y2 = cx + math.cos(ang) * outer, cy + math.sin(ang) * outer
-        col = gold_at(x2 / S) + (255,)
-        d.line([(x1, y1), (x2, y2)], fill=col, width=max(2, w))
-        for px, py in ((x1, y1), (x2, y2)):
-            d.ellipse([px - w / 2, py - w / 2, px + w / 2, py + w / 2], fill=col)
-
+    for kind, p in parts:
+        if kind == "rect":
+            d.rounded_rectangle([0, 0, S - 1, S - 1], radius=p["rx"] * k, fill=p["fill"])
+        elif kind == "circle":
+            box = [(p["cx"] - p["r"]) * k, (p["cy"] - p["r"]) * k,
+                   (p["cx"] + p["r"]) * k, (p["cy"] + p["r"]) * k]
+            if p["fill"] and p["fill"] != "none":
+                d.ellipse(box, fill=p["fill"])
+            if p["stroke"] and p["stroke"] != "none":
+                # Pillow strokes astride the path, as SVG does.
+                d.ellipse(box, outline=p["stroke"], width=max(1, round(p["width"] * k)))
+        elif kind == "path":
+            for poly in p["polys"]:
+                pts = [(x * k, y * k) for (x, y) in poly]
+                if len(pts) >= 3:
+                    d.polygon(pts, fill=p["fill"])
     return img.resize((size, size), Image.LANCZOS)
 
 
-# The .ico carries its own sizes so a legacy browser never upscales.
-sun(16).save("src/app/favicon.ico", format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (64, 64)],
-             append_images=[sun(32), sun(48), sun(64)])
-sun(512).save("src/app/icon.png")
-sun(180).convert("RGB").save("src/app/apple-icon.png")
-sun(1024).save("public/brand/sun-1024.png")
-sun(512).save("public/brand/sun-512.png")
-sun(180).save("public/brand/sun-180.png")
-print("  rasterised app icons and brand PNGs")
+def main():
+    """Each argument is `svg:out:size[:ico]`, so every output names its source."""
+    for spec in sys.argv[1:]:
+        bits = spec.split(":")
+        svg_path, out_path, size = bits[0], bits[1], int(bits[2])
+        fmt = bits[3] if len(bits) > 3 else None
+        svg = open(svg_path).read()
+        if fmt == "ico":
+            # Pillow's ICO writer derives the frames from the images it is given,
+            # so save the largest first and append the rest.
+            frames = [render(svg, n) for n in (64, 48, 32, 16)]
+            frames[0].save(out_path, format="ICO",
+                           sizes=[(64, 64), (48, 48), (32, 32), (16, 16)],
+                           append_images=frames[1:])
+        else:
+            render(svg, size).save(out_path)
+        print(f"  {out_path}  <-  {svg_path} @ {size}")
+
+
+if __name__ == "__main__":
+    main()
