@@ -207,7 +207,7 @@ async function main() {
     createElement(
       "div",
       { className: "flex items-end gap-8 bg-white p-10" },
-      ...[16, 20, 24, 30, 38, 48, 64].map((s) => createElement(SunMark, { key: s, size: s }))
+      ...[16, 20, 24, 30, 38, 48, 64, 96].map((s) => createElement(SunMark, { key: s, size: s }))
     )
   );
   writeFileSync(`${OUT}/marks.html`, page("Brand mark", styles, marks));

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { BRAND, GOLD_GRADIENT, brandVar } from "@/lib/brand/tokens";
+import { BRAND, brandVar } from "@/lib/brand/tokens";
 
 /**
  * The brand palette is specified by the product owner, so the values are pinned
@@ -86,11 +86,6 @@ describe("the brand palette is legible", () => {
     ] as const) {
       expect(contrast(colour, BRAND.surface), name).toBeGreaterThanOrEqual(4.5);
     }
-  });
-
-  it("has a gold gradient that runs light to dark", () => {
-    expect(lum(GOLD_GRADIENT.from)).toBeGreaterThan(lum(GOLD_GRADIENT.via));
-    expect(lum(GOLD_GRADIENT.via)).toBeGreaterThan(lum(GOLD_GRADIENT.to));
   });
 });
 

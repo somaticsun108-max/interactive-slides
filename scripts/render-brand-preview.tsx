@@ -16,7 +16,7 @@
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { BRAND, GOLD_GRADIENT } from "@/lib/brand/tokens";
+import { BRAND } from "@/lib/brand/tokens";
 
 const BASE = process.env.PREVIEW_BASE ?? "http://localhost:3000";
 const OUT = resolve("preview");
@@ -185,7 +185,8 @@ ${SWATCHES.map(
   <figure>${icon.replace('width="64" height="64"', 'width="16" height="16"')}<figcaption>16px — the tab</figcaption></figure>
   <figure><img src="data:image/png;base64,${readFileSync(resolve("src/app/apple-icon.png")).toString("base64")}" width="72" height="72" alt="Apple touch icon" style="border-radius:16px"><figcaption>apple-icon.png</figcaption></figure>
 </div>
-<p class="cap">The tab icon is a sun rather than the monogram: at 16px a letter inside a ring turns into a smudge, while a disc with rays keeps its shape. The ring-and-S mark is kept for everywhere there is room for it, so the header still carries the logo from the site.</p>
+<p class="cap">The mark is the supplied artwork redrawn as vector geometry in <code>src/lib/brand/logo.ts</code>: a gold ring at r=27 with a 4.4 stroke, a serif S fitted to the letter&rsquo;s measured box, and a coral play badge at (48.5, 48.5) r=11.4. Measured off the source, not traced by eye.</p>
+<p class="cap">Below 24px the full mark turns to mush, so the tab icon drops the S and keeps only a heavier ring with the badge on its edge — the one deliberate departure, made because a 16px serif S is an illegible speck.</p>
 
 <h2>Screens</h2>
 ${captured
